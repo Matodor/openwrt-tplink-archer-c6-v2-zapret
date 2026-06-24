@@ -1,0 +1,10 @@
+*.bin binary
+*.apk binary
+*.zip binary
+*.pcap binary
+
+*.md text eol=lf
+*.sh text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
+*.manifest text eol=lf

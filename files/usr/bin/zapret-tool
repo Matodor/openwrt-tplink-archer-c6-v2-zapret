@@ -1,0 +1,1995 @@
+#!/bin/sh
+set -eu
+
+CONF="${ZTOOL_CONF:-/etc/config/zapret}"
+BACKUP="${ZTOOL_BACKUP:-/etc/config/zapret.ztool.bak}"
+IPSET_DIR="${ZTOOL_IPSET_DIR:-/opt/zapret/ipset}"
+FAKE_DIR="${ZTOOL_FAKE_DIR:-/opt/zapret/files/fake}"
+INIT="${ZTOOL_INIT:-/etc/init.d/zapret}"
+DNSMASQ_INIT="${ZTOOL_DNSMASQ_INIT:-/etc/init.d/dnsmasq}"
+SYNC_CONFIG="${ZTOOL_SYNC_CONFIG:-/opt/zapret/sync_config.sh}"
+AUTO_FILE="$IPSET_DIR/zapret-hosts-auto.txt"
+USER_HOSTS="$IPSET_DIR/zapret-hosts-user.txt"
+EXCLUDE_FILE="$IPSET_DIR/zapret-hosts-user-exclude.txt"
+GOOGLE_HOSTS="$IPSET_DIR/zapret-hosts-google.txt"
+TMP_ROOT="${ZTOOL_TMP_DIR:-/tmp}"
+HOSTS_FILE="${ZTOOL_HOSTS_FILE:-/etc/hosts}"
+EXCLUDE_URL="${ZTOOL_EXCLUDE_URL:-https://raw.githubusercontent.com/StressOzz/Zapret-Manager/refs/heads/main/zapret-hosts-user-exclude.txt}"
+FLOWSEAL_BASE="${ZTOOL_FLOWSEAL_BASE:-https://raw.githubusercontent.com/Flowseal/zapret-discord-youtube/main}"
+FLOWSEAL_GENERAL="$IPSET_DIR/flowseal-general.txt"
+FLOWSEAL_GOOGLE="$IPSET_DIR/flowseal-google.txt"
+FLOWSEAL_EXCLUDE="$IPSET_DIR/flowseal-exclude.txt"
+FLOWSEAL_HOSTS="$IPSET_DIR/flowseal-hosts.txt"
+TELEGRAM_HOSTS="$IPSET_DIR/zapret-hosts-telegram.txt"
+DISCORD_MEDIA_HOSTS="$IPSET_DIR/zapret-hosts-discord-media.txt"
+FLOWSEAL_TMP_DIR="$TMP_ROOT/zapret-flowseal"
+FLOWSEAL_IPSET="$FLOWSEAL_TMP_DIR/ipset-service.txt"
+FLOWSEAL_TARGETS="$FLOWSEAL_TMP_DIR/targets.txt"
+FLOWSEAL_META="$IPSET_DIR/flowseal-meta.txt"
+FLOWSEAL_DBCLOUD_FAKE="$FAKE_DIR/quic_initial_dbankcloud_ru.bin"
+TCP_PORTS="80,443,2053,2083,2087,2096,8443"
+UDP_PORTS="443,19294-19344,50000-50100"
+
+die() {
+	echo "ERROR: $*" >&2
+	exit 1
+}
+
+have() {
+	command -v "$1" >/dev/null 2>&1
+}
+
+use_uci() {
+	[ "${ZTOOL_NO_UCI:-0}" != "1" ] && [ "$CONF" = "/etc/config/zapret" ] && have uci
+}
+
+need_conf() {
+	[ -f "$CONF" ] || die "zapret config not found: $CONF"
+}
+
+tmp_file() {
+	echo "/tmp/zapret-tool.$$.$1"
+}
+
+restart_zapret() {
+	[ "${ZTOOL_NO_RESTART:-0}" = "1" ] && return 0
+	if [ -x "$SYNC_CONFIG" ]; then
+		"$SYNC_CONFIG"
+	fi
+	[ -x "$INIT" ] || die "init script is not executable: $INIT"
+	"$INIT" restart
+}
+
+restart_dnsmasq() {
+	[ "${ZTOOL_NO_RESTART:-0}" = "1" ] && return 0
+	[ -x "$DNSMASQ_INIT" ] || return 0
+	"$DNSMASQ_INIT" restart
+}
+
+backup_config() {
+	need_conf
+	cp "$CONF" "$BACKUP"
+	echo "Backup saved: $BACKUP"
+}
+
+restore_config() {
+	[ -f "$BACKUP" ] || die "backup not found: $BACKUP"
+	cp "$BACKUP" "$CONF"
+	restart_zapret
+	echo "Config restored from: $BACKUP"
+}
+
+replace_option_file() {
+	key="$1"
+	value="$2"
+	tmp="$(tmp_file conf)"
+	start="$(grep -n "^[[:space:]]*option[[:space:]][[:space:]]*$key[[:space:]]*'" "$CONF" | head -n 1 | cut -d: -f1 || true)"
+
+	if [ -z "$start" ]; then
+		cp "$CONF" "$tmp"
+		{
+			printf "\toption %s '\n" "$key"
+			printf "%s\n" "$value"
+			printf "'\n"
+		} >> "$tmp"
+	else
+		next=$((start + 1))
+		rel_end="$(tail -n +"$next" "$CONF" | grep -n "^[[:space:]]*'[[:space:]]*$" | head -n 1 | cut -d: -f1 || true)"
+		if [ -n "$rel_end" ]; then
+			end=$((start + rel_end))
+		else
+			end="$start"
+		fi
+
+		if [ "$start" -gt 1 ]; then
+			sed -n "1,$((start - 1))p" "$CONF" > "$tmp"
+		else
+			: > "$tmp"
+		fi
+		{
+			printf "\toption %s '\n" "$key"
+			printf "%s\n" "$value"
+			printf "'\n"
+		} >> "$tmp"
+		total="$(wc -l < "$CONF" | tr -d ' ')"
+		if [ "$end" -lt "$total" ]; then
+			sed -n "$((end + 1)),\$p" "$CONF" >> "$tmp"
+		fi
+	fi
+
+	cp "$tmp" "$CONF"
+	rm -f "$tmp"
+}
+
+replace_simple_file() {
+	key="$1"
+	value="$2"
+	tmp="$(tmp_file simple)"
+	awk -v key="$key" -v value="$value" '
+		$1 == "option" && $2 == key {
+			print "\toption " key " \047" value "\047"
+			done = 1
+			next
+		}
+		{ print }
+		END {
+			if (!done) print "\toption " key " \047" value "\047"
+		}
+	' "$CONF" > "$tmp"
+	cp "$tmp" "$CONF"
+	rm -f "$tmp"
+}
+
+set_option() {
+	key="$1"
+	value="$2"
+	if use_uci; then
+		uci -q set "zapret.config.$key=$value" && uci -q commit zapret && return 0
+	fi
+	replace_simple_file "$key" "$value"
+}
+
+set_nfqws_opt() {
+	value="$1"
+	if use_uci; then
+		uci -q set "zapret.config.NFQWS_OPT=$value" && uci -q commit zapret && return 0
+	fi
+	replace_option_file "NFQWS_OPT" "$value"
+}
+
+get_option_file() {
+	key="$1"
+	awk -v key="$key" '$1 == "option" && $2 == key {
+		gsub(/^'\''|'\''$/, "", $3)
+		print $3
+		exit
+	}' "$CONF"
+}
+
+get_option() {
+	key="$1"
+	if use_uci; then
+		uci -q get "zapret.config.$key" 2>/dev/null || true
+	else
+		get_option_file "$key"
+	fi
+}
+
+current_nfqws_opt() {
+	need_conf
+	if use_uci; then
+		uci -q get zapret.config.NFQWS_OPT 2>/dev/null || true
+		return
+	fi
+	start="$(grep -n "^[[:space:]]*option[[:space:]][[:space:]]*NFQWS_OPT[[:space:]]*'" "$CONF" | head -n 1 | cut -d: -f1 || true)"
+	[ -n "$start" ] || return 0
+	next=$((start + 1))
+	tail -n +"$next" "$CONF" | sed "/^[[:space:]]*'[[:space:]]*$/q" | sed '$d'
+}
+
+ensure_ports() {
+	set_option NFQWS_PORTS_TCP "$TCP_PORTS"
+	set_option NFQWS_PORTS_UDP "$UDP_PORTS"
+}
+
+discord_blocks() {
+	cat <<EOF
+--new
+--filter-udp=19294-19344,50000-50100
+--filter-l7=discord,stun
+--dpi-desync=fake
+--dpi-desync-fake-discord=$FAKE_DIR/stun.bin
+--dpi-desync-fake-stun=$FAKE_DIR/stun.bin
+--dpi-desync-repeats=6
+--new
+--filter-tcp=2053,2083,2087,2096,8443
+--hostlist-domains=discord.media
+--dpi-desync=multisplit
+--dpi-desync-split-seqovl=652
+--dpi-desync-split-pos=2
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+EOF
+}
+
+default_tail() {
+	cat <<EOF
+--new
+--filter-tcp=443 <HOSTLIST>
+--dpi-desync=hostfakesplit
+--dpi-desync-hostfakesplit-mod=host=rzd.ru
+--dpi-desync-hostfakesplit-midhost=host-2
+--dpi-desync-split-seqovl=726
+--dpi-desync-fooling=badsum,badseq
+--dpi-desync-badseq-increment=0
+--new
+--filter-udp=443 <HOSTLIST_NOAUTO>
+--dpi-desync=fake
+--dpi-desync-repeats=6
+--dpi-desync-fake-quic=$FAKE_DIR/quic_initial_www_google_com.bin
+$(discord_blocks)
+EOF
+}
+
+strategy_v1() {
+	cat <<EOF
+--comment=ZTOOL_v1
+--filter-tcp=443
+--hostlist-exclude=$EXCLUDE_FILE
+--dpi-desync=split2
+--dpi-desync-split-seqovl=681
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/stun.bin
+$(discord_blocks)
+EOF
+}
+
+strategy_v2() {
+	cat <<EOF
+--comment=ZTOOL_v2
+--filter-tcp=443
+--hostlist-exclude=$EXCLUDE_FILE
+--dpi-desync=fake,fakeddisorder
+--dpi-desync-split-pos=10,midsld
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=fonts.google.com
+--dpi-desync-fake-tls=0x0F0F0F0F
+--dpi-desync-fake-tls-mod=none
+--dpi-desync-fakedsplit-pattern=$FAKE_DIR/tls_clienthello_vk_com.bin
+--dpi-desync-split-seqovl=336
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_gosuslugi_ru.bin
+--dpi-desync-fooling=badseq,badsum
+--dpi-desync-badseq-increment=0
+--new
+--filter-udp=443
+--dpi-desync=fake
+--dpi-desync-repeats=4
+--dpi-desync-fake-quic=$FAKE_DIR/quic_initial_www_google_com.bin
+$(discord_blocks)
+EOF
+}
+
+strategy_v3() {
+	cat <<EOF
+--comment=ZTOOL_v3
+--filter-tcp=443
+--hostlist-exclude=$EXCLUDE_FILE
+--dpi-desync=fake,fakeddisorder
+--dpi-desync-split-pos=10,midsld
+--dpi-desync-fake-tls=$FAKE_DIR/t2.bin
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=m.ok.ru
+--dpi-desync-fake-tls=0x0F0F0F0F
+--dpi-desync-fake-tls-mod=none
+--dpi-desync-fakedsplit-pattern=$FAKE_DIR/tls_clienthello_vk_com.bin
+--dpi-desync-split-seqovl=336
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_gosuslugi_ru.bin
+--dpi-desync-fooling=badseq,badsum
+--dpi-desync-badseq-increment=0
+--new
+--filter-udp=443
+--dpi-desync=fake
+--dpi-desync-repeats=4
+--dpi-desync-fake-quic=$FAKE_DIR/quic_initial_www_google_com.bin
+$(discord_blocks)
+EOF
+}
+
+strategy_v4() {
+	cat <<EOF
+--comment=ZTOOL_v4
+--filter-tcp=443
+--hostlist=$GOOGLE_HOSTS
+--dpi-desync=fake,multisplit
+--dpi-desync-split-pos=2,sld
+--dpi-desync-fake-tls=0x0F0F0F0F
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=google.com
+--dpi-desync-split-seqovl=2108
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fooling=badseq
+--new
+--filter-tcp=443
+--hostlist-exclude=$EXCLUDE_FILE
+--dpi-desync=multisplit
+--dpi-desync-split-seqovl=582
+--dpi-desync-split-pos=1
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/stun.bin
+--new
+--filter-udp=443
+--hostlist-exclude=$EXCLUDE_FILE
+--dpi-desync=fake
+--dpi-desync-repeats=4
+--dpi-desync-fake-quic=$FAKE_DIR/quic_initial_www_google_com.bin
+$(discord_blocks)
+EOF
+}
+
+strategy_v5() {
+	cat <<EOF
+--comment=ZTOOL_v5
+--filter-tcp=443
+--hostlist-exclude=$EXCLUDE_FILE
+--dpi-desync=fake,fakeddisorder
+--dpi-desync-split-pos=1
+--dpi-desync-fake-tls=$FAKE_DIR/stun.bin
+--dpi-desync-fake-tls-mod=none
+--dpi-desync-fakedsplit-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fooling=badseq,badsum
+--dpi-desync-badseq-increment=0
+--new
+--filter-udp=443
+--hostlist-exclude=$EXCLUDE_FILE
+--dpi-desync=fake
+--dpi-desync-repeats=6
+--dpi-desync-fake-quic=$FAKE_DIR/quic_initial_www_google_com.bin
+$(discord_blocks)
+EOF
+}
+
+strategy_v6() {
+	cat <<EOF
+--comment=ZTOOL_v6
+--filter-tcp=443
+--hostlist=$GOOGLE_HOSTS
+--dpi-desync=multisplit
+--dpi-desync-split-pos=1,sniext+1
+--dpi-desync-split-seqovl=1
+--new
+--filter-tcp=443 <HOSTLIST>
+--dpi-desync=hostfakesplit
+--dpi-desync-hostfakesplit-mod=host=i2.photo.2gis.com
+--dpi-desync-hostfakesplit-midhost=host-2
+--dpi-desync-split-seqovl=726
+--dpi-desync-fooling=badsum,badseq
+--dpi-desync-badseq-increment=0
+$(discord_blocks)
+EOF
+}
+
+strategy_v7() {
+	cat <<EOF
+--comment=ZTOOL_v7
+--filter-tcp=443
+--hostlist=$GOOGLE_HOSTS
+--dpi-desync=fake,multisplit
+--dpi-desync-split-pos=2,sld
+--dpi-desync-fake-tls=0x0F0F0F0F
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=ggpht.com
+--dpi-desync-repeats=6
+--dpi-desync-split-seqovl=620
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fooling=badsum,badseq
+--new
+--filter-tcp=443
+--hostlist-exclude=$EXCLUDE_FILE
+--dpi-desync=fake,multisplit
+--dpi-desync-split-seqovl=654
+--dpi-desync-split-pos=1
+--dpi-desync-fooling=badseq,badsum
+--dpi-desync-repeats=6
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/stun.bin
+--dpi-desync-fake-tls=$FAKE_DIR/stun.bin
+--dpi-desync-badseq-increment=0
+$(discord_blocks)
+EOF
+}
+
+strategy_v8() {
+	cat <<EOF
+--comment=ZTOOL_v8
+--filter-tcp=443
+--hostlist=$GOOGLE_HOSTS
+--dpi-desync=fake,multisplit
+--dpi-desync-split-pos=2,sld
+--dpi-desync-fake-tls=0x0F0F0F0F
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=ggpht.com
+--dpi-desync-split-seqovl=620
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fooling=badsum,badseq
+--new
+--filter-tcp=443
+--hostlist-exclude=$EXCLUDE_FILE
+--dpi-desync=fake
+--dpi-desync-fooling=ts
+--dpi-desync-fake-tls=$FAKE_DIR/4pda.bin
+--dpi-desync-fake-tls-mod=none
+$(discord_blocks)
+EOF
+}
+
+strategy_v9() {
+	cat <<EOF
+--comment=ZTOOL_v9
+--filter-tcp=443
+--hostlist-exclude=$EXCLUDE_FILE
+--dpi-desync=hostfakesplit
+--dpi-desync-fooling=badseq,badsum
+--dpi-desync-hostfakesplit-mod=host=mapgl.2gis.com
+--dpi-desync-badseq-increment=0
+$(discord_blocks)
+EOF
+}
+
+flowseal_common_hosts() {
+	cat <<EOF
+--hostlist=$FLOWSEAL_GENERAL
+--hostlist=$USER_HOSTS
+--hostlist=$TELEGRAM_HOSTS
+--hostlist-exclude=$FLOWSEAL_EXCLUDE
+--hostlist-exclude=$EXCLUDE_FILE
+EOF
+}
+
+flowseal_discord_blocks() {
+	cat <<EOF
+--new
+--filter-udp=19294-19344,50000-50100
+--filter-l7=discord,stun
+--dpi-desync=fake
+--dpi-desync-fake-discord=$FLOWSEAL_DBCLOUD_FAKE
+--dpi-desync-fake-stun=$FLOWSEAL_DBCLOUD_FAKE
+--dpi-desync-repeats=6
+--new
+--filter-tcp=2053,2083,2087,2096,8443
+--hostlist-domains=discord.media
+--dpi-desync=multisplit
+--dpi-desync-split-seqovl=681
+--dpi-desync-split-pos=1
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+EOF
+}
+
+flowseal_discord_udp_block() {
+	mode="$1"
+	repeats=6
+	extra_fake=""
+	if [ "$mode" = "alt12" ]; then
+		repeats=3
+		extra_fake="--dpi-desync-fake-discord=$FAKE_DIR/stun.bin"
+	fi
+	cat <<EOF
+--new
+--filter-udp=19294-19344,50000-50100
+--filter-l7=discord,stun
+--dpi-desync=fake
+$extra_fake
+--dpi-desync-fake-discord=$FLOWSEAL_DBCLOUD_FAKE
+--dpi-desync-fake-stun=$FLOWSEAL_DBCLOUD_FAKE
+--dpi-desync-repeats=$repeats
+EOF
+}
+
+flowseal_emit_variant() {
+	label="$1"
+	udp_repeats="$2"
+	discord_udp_mode="$3"
+	discord_opts="$4"
+	google_opts="$5"
+	general_opts="$6"
+	cat <<EOF
+--comment=ZTOOL_$label
+--filter-udp=443
+--hostlist=$FLOWSEAL_GOOGLE
+--hostlist=$GOOGLE_HOSTS
+$(flowseal_common_hosts)
+--dpi-desync=fake
+--dpi-desync-repeats=$udp_repeats
+--dpi-desync-fake-quic=$FAKE_DIR/quic_initial_www_google_com.bin
+$(flowseal_discord_udp_block "$discord_udp_mode")
+--new
+--filter-tcp=2053,2083,2087,2096,8443
+--hostlist-domains=discord.media
+$discord_opts
+--new
+--filter-tcp=443
+--hostlist=$FLOWSEAL_GOOGLE
+--ip-id=zero
+$google_opts
+--new
+--filter-tcp=80,443
+$(flowseal_common_hosts)
+$general_opts
+EOF
+}
+
+flowseal_emit_alt05() {
+	label="$1"
+	cat <<EOF
+--comment=ZTOOL_$label
+--filter-udp=443
+$(flowseal_common_hosts)
+--dpi-desync=fake
+--dpi-desync-repeats=6
+--dpi-desync-fake-quic=$FAKE_DIR/quic_initial_www_google_com.bin
+$(flowseal_discord_udp_block normal)
+--new
+--filter-l3=ipv4
+--filter-tcp=80,443,2053,2083,2087,2096,8443
+--dpi-desync=syndata,multidisorder
+EOF
+}
+
+flowseal_upstream_strategy() {
+	label="$1"
+	variant="$2"
+	udp_repeats=6
+	discord_udp_mode=normal
+	case "$variant" in
+	general)
+		discord_opts="$(cat <<EOF
+--dpi-desync=multisplit
+--dpi-desync-split-seqovl=681
+--dpi-desync-split-pos=1
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$(cat <<EOF
+--dpi-desync=multisplit
+--dpi-desync-split-seqovl=568
+--dpi-desync-split-pos=1
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/4pda.bin
+EOF
+)"
+		;;
+	alt01)
+		discord_opts="$(cat <<EOF
+--dpi-desync=fake,fakedsplit
+--dpi-desync-repeats=6
+--dpi-desync-fooling=ts
+--dpi-desync-fakedsplit-pattern=0x00
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$(cat <<EOF
+--dpi-desync=fake,fakedsplit
+--dpi-desync-repeats=6
+--dpi-desync-fooling=ts
+--dpi-desync-fakedsplit-pattern=0x00
+--dpi-desync-fake-tls=$FAKE_DIR/stun.bin
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-http=$FAKE_DIR/tls_clienthello_max_ru.bin
+EOF
+)"
+		;;
+	alt02)
+		discord_opts="$(cat <<EOF
+--dpi-desync=multisplit
+--dpi-desync-split-seqovl=652
+--dpi-desync-split-pos=2
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$discord_opts"
+		;;
+	alt03)
+		discord_opts="$(cat <<EOF
+--dpi-desync=fake,hostfakesplit
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+--dpi-desync-hostfakesplit-mod=host=www.google.com,altorder=1
+--dpi-desync-fooling=ts
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$(cat <<EOF
+--dpi-desync=fake,hostfakesplit
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=ya.ru
+--dpi-desync-hostfakesplit-mod=host=ya.ru,altorder=1
+--dpi-desync-fooling=ts
+--dpi-desync-fake-http=$FAKE_DIR/tls_clienthello_max_ru.bin
+EOF
+)"
+		;;
+	alt04)
+		discord_opts="$(cat <<EOF
+--dpi-desync=fake,multisplit
+--dpi-desync-repeats=6
+--dpi-desync-fooling=badseq
+--dpi-desync-badseq-increment=1000
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$(cat <<EOF
+--dpi-desync=fake,multisplit
+--dpi-desync-repeats=6
+--dpi-desync-fooling=badseq
+--dpi-desync-badseq-increment=1000
+--dpi-desync-fake-tls=$FAKE_DIR/stun.bin
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-http=$FAKE_DIR/tls_clienthello_max_ru.bin
+EOF
+)"
+		;;
+	alt05)
+		flowseal_emit_alt05 "$label"
+		return 0
+		;;
+	alt06)
+		discord_opts="$(cat <<EOF
+--dpi-desync=multisplit
+--dpi-desync-split-seqovl=681
+--dpi-desync-split-pos=1
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$discord_opts"
+		;;
+	alt07)
+		discord_opts="$(cat <<EOF
+--dpi-desync=multisplit
+--dpi-desync-split-pos=2,sniext+1
+--dpi-desync-split-seqovl=679
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$discord_opts"
+		;;
+	alt08)
+		discord_opts="$(cat <<EOF
+--dpi-desync=fake
+--dpi-desync-fake-tls-mod=none
+--dpi-desync-repeats=6
+--dpi-desync-fooling=badseq
+--dpi-desync-badseq-increment=2
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$(cat <<EOF
+--dpi-desync=fake
+--dpi-desync-fake-tls-mod=none
+--dpi-desync-repeats=6
+--dpi-desync-fooling=badseq
+--dpi-desync-badseq-increment=2
+--dpi-desync-fake-http=$FAKE_DIR/tls_clienthello_max_ru.bin
+EOF
+)"
+		;;
+	alt09)
+		discord_opts="$(cat <<EOF
+--dpi-desync=hostfakesplit
+--dpi-desync-repeats=4
+--dpi-desync-fooling=ts
+--dpi-desync-hostfakesplit-mod=host=www.google.com
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$(cat <<EOF
+--dpi-desync=hostfakesplit
+--dpi-desync-repeats=4
+--dpi-desync-fooling=ts,md5sig
+--dpi-desync-hostfakesplit-mod=host=ozon.ru
+EOF
+)"
+		;;
+	alt10)
+		discord_opts="$(cat <<EOF
+--dpi-desync=fake
+--dpi-desync-repeats=6
+--dpi-desync-fooling=ts
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-tls-mod=none
+EOF
+)"
+		google_opts="$(cat <<EOF
+--dpi-desync=fake
+--dpi-desync-repeats=6
+--dpi-desync-fooling=ts
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+EOF
+)"
+		general_opts="$(cat <<EOF
+--dpi-desync=fake
+--dpi-desync-repeats=6
+--dpi-desync-fooling=ts
+--dpi-desync-fake-tls=$FAKE_DIR/stun.bin
+--dpi-desync-fake-tls=$FAKE_DIR/4pda.bin
+--dpi-desync-fake-http=$FAKE_DIR/tls_clienthello_max_ru.bin
+EOF
+)"
+		;;
+	alt11)
+		udp_repeats=11
+		discord_opts="$(cat <<EOF
+--dpi-desync=fake,multisplit
+--dpi-desync-split-seqovl=681
+--dpi-desync-split-pos=1
+--dpi-desync-fooling=ts
+--dpi-desync-repeats=8
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$(cat <<EOF
+--dpi-desync=fake,multisplit
+--dpi-desync-split-seqovl=664
+--dpi-desync-split-pos=1
+--dpi-desync-fooling=ts
+--dpi-desync-repeats=8
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_max_ru.bin
+--dpi-desync-fake-tls=$FAKE_DIR/stun.bin
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_max_ru.bin
+--dpi-desync-fake-http=$FAKE_DIR/tls_clienthello_max_ru.bin
+EOF
+)"
+		;;
+	alt12)
+		udp_repeats=11
+		discord_udp_mode=alt12
+		discord_opts="$(cat <<EOF
+--dpi-desync=fake,multisplit
+--dpi-desync-split-seqovl=681
+--dpi-desync-split-pos=1
+--dpi-desync-fooling=ts
+--dpi-desync-repeats=8
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+EOF
+)"
+		google_opts="$(cat <<EOF
+--dpi-desync=hostfakesplit
+--dpi-desync-fooling=ts
+--dpi-desync-hostfakesplit-mod=host=www.google.com
+EOF
+)"
+		general_opts="$(cat <<EOF
+--dpi-desync=fake,multisplit
+--dpi-desync-split-seqovl=664
+--dpi-desync-split-pos=1
+--dpi-desync-fooling=ts
+--dpi-desync-repeats=8
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_max_ru.bin
+--dpi-desync-fake-tls=$FAKE_DIR/stun.bin
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_max_ru.bin
+--dpi-desync-fake-http=$FAKE_DIR/tls_clienthello_max_ru.bin
+EOF
+)"
+		;;
+	simple)
+		discord_opts="$(cat <<EOF
+--dpi-desync=fake
+--dpi-desync-repeats=6
+--dpi-desync-fooling=ts
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$(cat <<EOF
+--dpi-desync=fake
+--dpi-desync-repeats=6
+--dpi-desync-fooling=ts
+--dpi-desync-fake-tls=$FAKE_DIR/stun.bin
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-http=$FAKE_DIR/tls_clienthello_max_ru.bin
+EOF
+)"
+		;;
+	simple-alt01)
+		discord_opts="$(cat <<EOF
+--dpi-desync=fake
+--dpi-desync-repeats=6
+--dpi-desync-fooling=badseq
+--dpi-desync-badseq-increment=2
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$(cat <<EOF
+--dpi-desync=fake
+--dpi-desync-repeats=6
+--dpi-desync-fooling=badseq
+--dpi-desync-badseq-increment=2
+--dpi-desync-fake-tls=$FAKE_DIR/stun.bin
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-http=$FAKE_DIR/tls_clienthello_max_ru.bin
+EOF
+)"
+		;;
+	simple-alt02)
+		discord_opts="$(cat <<EOF
+--dpi-desync=fake
+--dpi-desync-repeats=6
+--dpi-desync-fooling=ts
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$(cat <<EOF
+--dpi-desync=fake
+--dpi-desync-repeats=6
+--dpi-desync-fooling=ts
+--dpi-desync-fake-tls=$FAKE_DIR/stun.bin
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_max_ru.bin
+--dpi-desync-fake-http=$FAKE_DIR/tls_clienthello_max_ru.bin
+EOF
+)"
+		;;
+	fake-tls-auto)
+		udp_repeats=11
+		discord_opts="$(cat <<EOF
+--dpi-desync=fake,multidisorder
+--dpi-desync-split-pos=1,midsld
+--dpi-desync-repeats=11
+--dpi-desync-fooling=badseq
+--dpi-desync-fake-tls=0x00000000
+--dpi-desync-fake-tls=!
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$(cat <<EOF
+--dpi-desync=fake,multidisorder
+--dpi-desync-split-pos=1,midsld
+--dpi-desync-repeats=11
+--dpi-desync-fooling=badseq
+--dpi-desync-fake-tls=0x00000000
+--dpi-desync-fake-tls=!
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+--dpi-desync-fake-http=$FAKE_DIR/tls_clienthello_max_ru.bin
+EOF
+)"
+		;;
+	fake-tls-auto-alt01)
+		udp_repeats=11
+		discord_opts="$(cat <<EOF
+--dpi-desync=fake,fakedsplit
+--dpi-desync-split-pos=1
+--dpi-desync-fooling=badseq
+--dpi-desync-badseq-increment=2
+--dpi-desync-repeats=8
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$(cat <<EOF
+--dpi-desync=fake,fakedsplit
+--dpi-desync-split-pos=1
+--dpi-desync-fooling=badseq
+--dpi-desync-badseq-increment=2
+--dpi-desync-repeats=8
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+--dpi-desync-fake-http=$FAKE_DIR/tls_clienthello_max_ru.bin
+EOF
+)"
+		;;
+	fake-tls-auto-alt02)
+		udp_repeats=11
+		discord_opts="$(cat <<EOF
+--dpi-desync=fake,multisplit
+--dpi-desync-split-seqovl=681
+--dpi-desync-split-pos=1
+--dpi-desync-fooling=badseq
+--dpi-desync-badseq-increment=10000000
+--dpi-desync-repeats=8
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$(cat <<EOF
+--dpi-desync=fake,multisplit
+--dpi-desync-split-seqovl=681
+--dpi-desync-split-pos=1
+--dpi-desync-fooling=badseq
+--dpi-desync-badseq-increment=10000000
+--dpi-desync-repeats=8
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+--dpi-desync-fake-http=$FAKE_DIR/tls_clienthello_max_ru.bin
+EOF
+)"
+		;;
+	fake-tls-auto-alt03)
+		udp_repeats=11
+		discord_opts="$(cat <<EOF
+--dpi-desync=fake,multisplit
+--dpi-desync-split-seqovl=681
+--dpi-desync-split-pos=1
+--dpi-desync-fooling=ts
+--dpi-desync-repeats=8
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+EOF
+)"
+		google_opts="$discord_opts"
+		general_opts="$(cat <<EOF
+--dpi-desync=fake,multisplit
+--dpi-desync-split-seqovl=681
+--dpi-desync-split-pos=1
+--dpi-desync-fooling=ts
+--dpi-desync-repeats=8
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+--dpi-desync-fake-http=$FAKE_DIR/tls_clienthello_max_ru.bin
+EOF
+)"
+		;;
+	*) return 1 ;;
+	esac
+	flowseal_emit_variant "$label" "$udp_repeats" "$discord_udp_mode" "$discord_opts" "$google_opts" "$general_opts"
+}
+
+strategy_fs_general() {
+	flowseal_upstream_strategy fs-general general
+}
+
+strategy_fs_alt() {
+	flowseal_upstream_strategy fs-alt alt01
+}
+
+strategy_fs_simple_fake() {
+	flowseal_upstream_strategy fs-simple-fake simple
+}
+
+strategy_fs_fake_tls_auto() {
+	flowseal_upstream_strategy fs-fake-tls-auto fake-tls-auto
+}
+
+strategy_fs_general_ipset() {
+	cat <<EOF
+--comment=ZTOOL_fs-general-ipset
+$(strategy_fs_general)
+--new
+--filter-udp=443
+--ipset=$FLOWSEAL_IPSET
+--hostlist-exclude=$FLOWSEAL_EXCLUDE
+--hostlist-exclude=$EXCLUDE_FILE
+--dpi-desync=fake
+--dpi-desync-repeats=6
+--dpi-desync-fake-quic=$FAKE_DIR/quic_initial_www_google_com.bin
+--new
+--filter-tcp=80,443,8443
+--ipset=$FLOWSEAL_IPSET
+--hostlist-exclude=$FLOWSEAL_EXCLUDE
+--hostlist-exclude=$EXCLUDE_FILE
+--dpi-desync=multisplit
+--dpi-desync-split-seqovl=568
+--dpi-desync-split-pos=1
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/4pda.bin
+EOF
+	return 0
+}
+
+flowseal_strategy_names() {
+	echo "fs-general fs-alt01 fs-alt02 fs-alt03 fs-alt04 fs-alt05 fs-alt06 fs-alt07 fs-alt08 fs-alt09 fs-alt10 fs-alt11 fs-alt12 fs-simple-fake fs-simple-fake-alt01 fs-simple-fake-alt02 fs-fake-tls-auto fs-fake-tls-auto-alt01 fs-fake-tls-auto-alt02 fs-fake-tls-auto-alt03 fs-general-ipset"
+}
+
+strategy_youtube() {
+	name="$1"
+	case "$name" in
+	yv01) cat <<EOF
+--comment=ZTOOL_yv01
+--filter-tcp=443
+--hostlist=$GOOGLE_HOSTS
+--dpi-desync=multidisorder
+--dpi-desync-split-pos=7,sld+1
+--dpi-desync-fake-tls=0x0F0F0F0F
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+--dpi-desync-fooling=badseq
+--dpi-desync-autottl 2:2-12
+$(default_tail)
+EOF
+		;;
+	yv02) cat <<EOF
+--comment=ZTOOL_yv02
+--filter-tcp=443
+--hostlist=$GOOGLE_HOSTS
+--dpi-desync=multidisorder
+--dpi-desync-split-pos=1,midsld,endhost-1
+--dpi-desync-repeats=2
+--dpi-desync-fooling=md5sig
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+$(default_tail)
+EOF
+		;;
+	yv03) cat <<EOF
+--comment=ZTOOL_yv03
+--filter-tcp=443
+--hostlist=$GOOGLE_HOSTS
+--dpi-desync=fake,multisplit
+--dpi-desync-fake-tls=0x00000000
+--dpi-desync-fake-tls=!
+--dpi-desync-split-pos=1,midsld
+--dpi-desync-repeats=2
+--dpi-desync-fooling=badseq
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+$(default_tail)
+EOF
+		;;
+	yv04) cat <<EOF
+--comment=ZTOOL_yv04
+--filter-tcp=443
+--hostlist=$GOOGLE_HOSTS
+--dpi-desync-repeats=6
+--dpi-desync-fooling=badseq
+--dpi-desync-badseq-increment=2
+--dpi-desync=multidisorder
+--dpi-desync-split-pos=1,midsld
+--dpi-desync-fake-quic=$FAKE_DIR/quic_initial_www_google_com.bin
+$(default_tail)
+EOF
+		;;
+	yv05) cat <<EOF
+--comment=ZTOOL_yv05
+--filter-tcp=443
+--hostlist=$GOOGLE_HOSTS
+--dpi-desync=multidisorder
+--dpi-desync-split-pos=2,5,105,host+5,sld-1,endsld-5,endsld
+$(default_tail)
+EOF
+		;;
+	yv06) cat <<EOF
+--comment=ZTOOL_yv06
+--filter-tcp=443
+--hostlist=$GOOGLE_HOSTS
+--dpi-desync=multidisorder
+--dpi-desync-split-pos=1,midsld
+--dpi-desync-repeats=2
+$(default_tail)
+EOF
+		;;
+	yv07) cat <<EOF
+--comment=ZTOOL_yv07
+--filter-tcp=443
+--hostlist=$GOOGLE_HOSTS
+--dpi-desync=fake,multidisorder
+--dpi-desync-split-pos=10,midsld
+--dpi-desync-fake-tls=0x00000000
+--dpi-desync-fake-tls=0x0F0F0F0F
+--dpi-desync-fake-tls=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=fonts.google.com
+--dpi-desync-split-seqovl=336
+--dpi-desync-split-seqovl-pattern=$FAKE_DIR/tls_clienthello_www_google_com.bin
+--dpi-desync-fooling=badseq
+$(default_tail)
+EOF
+		;;
+	yv08) cat <<EOF
+--comment=ZTOOL_yv08
+--filter-tcp=443
+--hostlist=$GOOGLE_HOSTS
+--dpi-desync=hostfakesplit
+--dpi-desync-hostfakesplit-mod=host=google.com
+--dpi-desync-fooling=ts
+$(default_tail)
+EOF
+		;;
+	yv09) cat <<EOF
+--comment=ZTOOL_yv09
+--filter-tcp=443
+--hostlist=$GOOGLE_HOSTS
+--dpi-desync=multidisorder
+--dpi-desync-split-pos=1,sniext+1,host+1,midsld-2,midsld,midsld+2,endhost-1
+$(default_tail)
+EOF
+		;;
+	yv10) cat <<EOF
+--comment=ZTOOL_yv10
+--filter-tcp=443
+--hostlist=$GOOGLE_HOSTS
+--dpi-desync=multidisorder
+--dpi-desync-split-pos=1,2,3,5,105,host+5,sld-1,endsld-5,endsld
+--dpi-desync-fooling=badsum
+$(default_tail)
+EOF
+		;;
+	yv11) cat <<EOF
+--comment=ZTOOL_yv11
+--filter-tcp=443
+--hostlist=$GOOGLE_HOSTS
+--dpi-desync=fake,multisplit
+--dpi-desync-fake-tls=0x00000000
+--dpi-desync-fake-tls=!
+--dpi-desync-split-pos=1,sniext+1,host+1,midsld-2,midsld,midsld+2,endhost-1
+--dpi-desync-repeats=2
+--dpi-desync-fooling=badseq
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+$(default_tail)
+EOF
+		;;
+	*) return 1 ;;
+	esac
+}
+
+strategy_body() {
+	name="$(printf '%s' "$1" | tr A-Z a-z)"
+	case "$name" in
+	v1) strategy_v1 ;;
+	v2) strategy_v2 ;;
+	v3) strategy_v3 ;;
+	v4) strategy_v4 ;;
+	v5) strategy_v5 ;;
+	v6) strategy_v6 ;;
+	v7) strategy_v7 ;;
+	v8) strategy_v8 ;;
+	v9) strategy_v9 ;;
+	fs-general) strategy_fs_general ;;
+	fs-alt) strategy_fs_alt ;;
+	fs-alt1|fs-alt01) flowseal_upstream_strategy "$name" alt01 ;;
+	fs-alt2|fs-alt02) flowseal_upstream_strategy "$name" alt02 ;;
+	fs-alt3|fs-alt03) flowseal_upstream_strategy "$name" alt03 ;;
+	fs-alt4|fs-alt04) flowseal_upstream_strategy "$name" alt04 ;;
+	fs-alt5|fs-alt05) flowseal_upstream_strategy "$name" alt05 ;;
+	fs-alt6|fs-alt06) flowseal_upstream_strategy "$name" alt06 ;;
+	fs-alt7|fs-alt07) flowseal_upstream_strategy "$name" alt07 ;;
+	fs-alt8|fs-alt08) flowseal_upstream_strategy "$name" alt08 ;;
+	fs-alt9|fs-alt09) flowseal_upstream_strategy "$name" alt09 ;;
+	fs-alt10) flowseal_upstream_strategy "$name" alt10 ;;
+	fs-alt11) flowseal_upstream_strategy "$name" alt11 ;;
+	fs-alt12) flowseal_upstream_strategy "$name" alt12 ;;
+	fs-simple-fake) strategy_fs_simple_fake ;;
+	fs-simple-fake-alt1|fs-simple-fake-alt01) flowseal_upstream_strategy "$name" simple-alt01 ;;
+	fs-simple-fake-alt2|fs-simple-fake-alt02) flowseal_upstream_strategy "$name" simple-alt02 ;;
+	fs-fake-tls-auto) strategy_fs_fake_tls_auto ;;
+	fs-fake-tls-auto-alt1|fs-fake-tls-auto-alt01) flowseal_upstream_strategy "$name" fake-tls-auto-alt01 ;;
+	fs-fake-tls-auto-alt2|fs-fake-tls-auto-alt02) flowseal_upstream_strategy "$name" fake-tls-auto-alt02 ;;
+	fs-fake-tls-auto-alt3|fs-fake-tls-auto-alt03) flowseal_upstream_strategy "$name" fake-tls-auto-alt03 ;;
+	fs-general-ipset) strategy_fs_general_ipset ;;
+	yv0[1-9]|yv10|yv11) strategy_youtube "$name" ;;
+	*) return 1 ;;
+	esac
+}
+
+apply_strategy_raw() {
+	name="$1"
+	body="$(strategy_body "$name")" || die "unknown strategy: $name"
+	ensure_ports
+	set_nfqws_opt "$body"
+	restart_zapret
+}
+
+apply_strategy() {
+	name="$1"
+	backup_config
+	if ! apply_strategy_raw "$name"; then
+		echo "Apply failed, restoring backup" >&2
+		restore_config || true
+		exit 1
+	fi
+	echo "Applied strategy: $name"
+}
+
+download_to() {
+	dl_url="$1"
+	dl_out="$2"
+	dl_attempts="${ZTOOL_DOWNLOAD_ATTEMPTS:-3}"
+	dl_sleep="${ZTOOL_DOWNLOAD_SLEEP:-2}"
+	dl_i=1
+	while [ "$dl_i" -le "$dl_attempts" ]; do
+		if have curl; then
+			curl -4 -fsSL --connect-timeout 12 --max-time 45 "$dl_url" -o "$dl_out" && return 0
+		elif have wget; then
+			wget -q -O "$dl_out" "$dl_url" && return 0
+		else
+			die "curl or wget is required"
+		fi
+		echo "Download failed ($dl_i/$dl_attempts): $dl_url" >&2
+		dl_i=$((dl_i + 1))
+		[ "$dl_i" -le "$dl_attempts" ] && sleep "$dl_sleep"
+	done
+	return 1
+}
+
+flowseal_url() {
+	printf '%s/%s\n' "${FLOWSEAL_BASE%/}" "$1"
+}
+
+download_checked() {
+	dl_path="$1"
+	dl_dest="$2"
+	dl_min_size="$3"
+	dl_max_size="$4"
+	dl_tmp="$(tmp_file dl)"
+
+	download_to "$(flowseal_url "$dl_path")" "$dl_tmp"
+	dl_size="$(wc -c < "$dl_tmp" | tr -d ' ')"
+	[ "$dl_size" -ge "$dl_min_size" ] || die "$dl_path is too small: $dl_size bytes"
+	[ "$dl_size" -le "$dl_max_size" ] || die "$dl_path is too large: $dl_size bytes"
+	cp "$dl_tmp" "$dl_dest"
+	rm -f "$dl_tmp"
+}
+
+normalize_domain_file() {
+	in="$1"
+	out="$2"
+	tmp="$(tmp_file list)"
+	awk '
+		{
+			gsub(/\r/, "")
+			if ($0 ~ /^[[:space:]]*#/ || $0 ~ /^[[:space:]]*$/) next
+			d = tolower($1)
+			gsub(/^https?:\/\//, "", d)
+			sub(/\/.*/, "", d)
+			sub(/:.*/, "", d)
+			gsub(/^\.+|\.+$/, "", d)
+			if (d ~ /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z0-9-]+$/) print d
+		}
+	' "$in" | sort -u > "$tmp"
+	[ -s "$tmp" ] || die "normalized list is empty: $in"
+	cp "$tmp" "$out"
+	rm -f "$tmp"
+}
+
+extract_hosts_domains() {
+	in="$1"
+	out="$2"
+	mode="$3"
+	tmp="$(tmp_file hosts)"
+	awk -v mode="$mode" '
+		function is_telegram(d) {
+			return d ~ /telegram/ || d == "t.me" || d ~ /\.t\.me$/ || d == "tx.me" || d ~ /\.tx\.me$/ || d == "telesco.pe" || d ~ /\.telesco\.pe$/ || d == "telegra.ph" || d ~ /\.telegra\.ph$/ || d == "tg.dev" || d ~ /\.tg\.dev$/ || d == "teleg.xyz" || d ~ /\.teleg\.xyz$/ || d == "tgram.org" || d ~ /\.tgram\.org$/ || d == "tg.org" || d ~ /\.tg\.org$/ || d == "torg.org" || d ~ /\.torg\.org$/ || d == "fragment.com" || d ~ /\.fragment\.com$/ || d == "graph.org" || d ~ /\.graph\.org$/ || d == "comments.app" || d ~ /\.comments\.app$/ || d == "contest.com" || d ~ /\.contest\.com$/ || d == "nicegram.app" || d ~ /\.nicegram\.app$/ || d == "quiz.directory" || d ~ /\.quiz\.directory$/ || d == "tdesktop.com" || d ~ /\.tdesktop\.com$/ || d == "telega.one" || d ~ /\.telega\.one$/ || d == "usercontent.dev" || d ~ /\.usercontent\.dev$/
+		}
+		NF >= 2 {
+			gsub(/\r/, "")
+			d = tolower($2)
+			if (d !~ /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z0-9-]+$/) next
+			if (mode == "telegram" && is_telegram(d)) print d
+			else if (mode == "discord" && d ~ /discord/) print d
+			else if (mode == "all") print d
+		}
+	' "$in" | sort -u > "$tmp"
+	[ -s "$tmp" ] || die "no $mode domains found in $in"
+	cp "$tmp" "$out"
+	rm -f "$tmp"
+}
+
+telegram_seed_domains() {
+	cat <<'EOF'
+t.me
+tg.dev
+tg.org
+tx.me
+teleg.xyz
+telegram.ai
+telegram.asia
+telegram.biz
+telegram.cloud
+telegram.cn
+telegram.co
+telegram.com
+telegram.de
+telegram.dev
+telegram.dog
+telegram.eu
+telegram.fr
+telegram.host
+telegram.in
+telegram.info
+telegram.io
+telegram.jp
+telegram.me
+telegram.net
+telegram.org
+telegram.qa
+telegram.ru
+telegram.services
+telegram.solutions
+telegram.space
+telegram.team
+telegram.tech
+telegram.uk
+telegram.us
+telegram.website
+telegram.xyz
+telegramapp.org
+telegra.ph
+telesco.pe
+nicegram.app
+telegramdownload.com
+cdn-telegram.org
+comments.app
+contest.com
+fragment.com
+graph.org
+quiz.directory
+tdesktop.com
+telega.one
+telegram-cdn.org
+usercontent.dev
+tgram.org
+torg.org
+EOF
+}
+
+merge_unique_files() {
+	out="$1"
+	shift
+	tmp="$(tmp_file merge)"
+	cat "$@" 2>/dev/null | awk 'NF && $0 !~ /^[[:space:]]*#/ {print tolower($1)}' | sort -u > "$tmp"
+	cp "$tmp" "$out"
+	rm -f "$tmp"
+}
+
+is_telegram_domain() {
+	d="$1"
+	case "$d" in
+	*telegram*|t.me|*.t.me|tx.me|*.tx.me|telesco.pe|*.telesco.pe|telegra.ph|*.telegra.ph|tg.dev|*.tg.dev|teleg.xyz|*.teleg.xyz|tgram.org|*.tgram.org|tg.org|*.tg.org|torg.org|*.torg.org|fragment.com|*.fragment.com|graph.org|*.graph.org|comments.app|*.comments.app|contest.com|*.contest.com|nicegram.app|*.nicegram.app|quiz.directory|*.quiz.directory|tdesktop.com|*.tdesktop.com|telega.one|*.telega.one|usercontent.dev|*.usercontent.dev) return 0 ;;
+	*) return 1 ;;
+	esac
+}
+
+flowseal_update() {
+	mkdir -p "$IPSET_DIR" "$FAKE_DIR" "$FLOWSEAL_TMP_DIR"
+	raw_general="$(tmp_file fs-general)"
+	raw_google="$(tmp_file fs-google)"
+	raw_exclude="$(tmp_file fs-exclude)"
+	raw_hosts="$(tmp_file fs-hosts)"
+	raw_telegram="$(tmp_file fs-telegram)"
+	raw_telegram_seed="$(tmp_file fs-telegram-seed)"
+	raw_discord="$(tmp_file fs-discord)"
+
+	download_checked "lists/list-general.txt" "$raw_general" 10 65536
+	download_checked "lists/list-google.txt" "$raw_google" 10 65536
+	download_checked "lists/list-exclude.txt" "$raw_exclude" 10 65536
+	download_checked ".service/hosts" "$raw_hosts" 100 65536
+	download_checked "bin/quic_initial_dbankcloud_ru.bin" "$FLOWSEAL_DBCLOUD_FAKE" 10 8192
+	download_checked "utils/targets.txt" "$FLOWSEAL_TARGETS" 50 65536
+
+	normalize_domain_file "$raw_general" "$FLOWSEAL_GENERAL"
+	normalize_domain_file "$raw_google" "$FLOWSEAL_GOOGLE"
+	normalize_domain_file "$raw_exclude" "$FLOWSEAL_EXCLUDE"
+	cp "$raw_hosts" "$FLOWSEAL_HOSTS"
+	extract_hosts_domains "$raw_hosts" "$raw_telegram" telegram
+	extract_hosts_domains "$raw_hosts" "$raw_discord" discord
+	telegram_seed_domains > "$raw_telegram_seed"
+	merge_unique_files "$TELEGRAM_HOSTS" "$TELEGRAM_HOSTS" "$raw_telegram_seed" "$raw_telegram"
+	merge_unique_files "$DISCORD_MEDIA_HOSTS" "$DISCORD_MEDIA_HOSTS" "$raw_discord"
+	{
+		echo "base=$FLOWSEAL_BASE"
+		echo "updated=$(date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date)"
+	} > "$FLOWSEAL_META"
+
+	rm -f "$raw_general" "$raw_google" "$raw_exclude" "$raw_hosts" "$raw_telegram" "$raw_telegram_seed" "$raw_discord"
+	restart_zapret
+	echo "Flowseal lists updated"
+}
+
+flowseal_telegram_reset() {
+	mkdir -p "$IPSET_DIR"
+	raw_telegram="$(tmp_file fs-telegram)"
+	raw_telegram_seed="$(tmp_file fs-telegram-seed)"
+	tmp_out="$(tmp_file telegram-reset)"
+
+	telegram_seed_domains > "$raw_telegram_seed"
+	if [ -s "$FLOWSEAL_HOSTS" ]; then
+		extract_hosts_domains "$FLOWSEAL_HOSTS" "$raw_telegram" telegram
+	else
+		: > "$raw_telegram"
+	fi
+
+	[ -f "$TELEGRAM_HOSTS" ] && cp "$TELEGRAM_HOSTS" "$TELEGRAM_HOSTS.ztool-reset.bak" || true
+	merge_unique_files "$tmp_out" "$raw_telegram_seed" "$raw_telegram"
+	cp "$tmp_out" "$TELEGRAM_HOSTS"
+	rm -f "$raw_telegram" "$raw_telegram_seed" "$tmp_out"
+	restart_zapret
+	echo "Telegram hostlist reset: $TELEGRAM_HOSTS"
+}
+
+flowseal_ipset_update() {
+	mkdir -p "$FLOWSEAL_TMP_DIR"
+	download_checked ".service/ipset-service.txt" "$FLOWSEAL_IPSET" 10 1048576
+	echo "Flowseal ipset updated in tmp: $FLOWSEAL_IPSET ($(wc -c < "$FLOWSEAL_IPSET" | tr -d ' ') bytes)"
+	restart_zapret
+}
+
+flowseal_migrate_user() {
+	mkdir -p "$IPSET_DIR"
+	touch "$USER_HOSTS" "$TELEGRAM_HOSTS"
+	cp "$USER_HOSTS" "$USER_HOSTS.ztool.bak"
+	[ -f "$TELEGRAM_HOSTS" ] && cp "$TELEGRAM_HOSTS" "$TELEGRAM_HOSTS.ztool.bak" || true
+	tmp_user="$(tmp_file user)"
+	tmp_tg="$(tmp_file tg)"
+	: > "$tmp_user"
+	cp "$TELEGRAM_HOSTS" "$tmp_tg"
+
+	while IFS= read -r raw || [ -n "$raw" ]; do
+		domain="$(normalize_domain "$raw")"
+		[ -n "$domain" ] || continue
+		if is_telegram_domain "$domain"; then
+			printf '%s\n' "$domain" >> "$tmp_tg"
+		else
+			printf '%s\n' "$domain" >> "$tmp_user"
+		fi
+	done < "$USER_HOSTS"
+
+	sort -u "$tmp_user" > "$USER_HOSTS"
+	sort -u "$tmp_tg" > "$TELEGRAM_HOSTS"
+	rm -f "$tmp_user" "$tmp_tg"
+	restart_zapret
+	echo "User hostlist migrated. Backup: $USER_HOSTS.ztool.bak"
+}
+
+flowseal_need_lists() {
+	[ -s "$FLOWSEAL_GENERAL" ] || die "missing $FLOWSEAL_GENERAL; run: zapret-tool flowseal update"
+	[ -s "$FLOWSEAL_GOOGLE" ] || die "missing $FLOWSEAL_GOOGLE; run: zapret-tool flowseal update"
+	[ -s "$FLOWSEAL_EXCLUDE" ] || die "missing $FLOWSEAL_EXCLUDE; run: zapret-tool flowseal update"
+	[ -s "$TELEGRAM_HOSTS" ] || die "missing $TELEGRAM_HOSTS; run: zapret-tool flowseal update"
+	[ -s "$FLOWSEAL_DBCLOUD_FAKE" ] || die "missing $FLOWSEAL_DBCLOUD_FAKE; run: zapret-tool flowseal update"
+}
+
+flowseal_apply() {
+	name="$1"
+	flowseal_need_lists
+	case "$name" in
+	fs-general-ipset) [ -s "$FLOWSEAL_IPSET" ] || die "missing tmp ipset; run: zapret-tool flowseal ipset update" ;;
+	esac
+	apply_strategy "$name"
+}
+
+remove_hosts_marker() {
+	in="$1"
+	out="$2"
+	awk '
+		/^# ZTOOL-FLOWSEAL-BEGIN$/ {skip=1; next}
+		/^# ZTOOL-FLOWSEAL-END$/ {skip=0; next}
+		!skip {print}
+	' "$in" > "$out"
+}
+
+flowseal_hosts_install() {
+	[ -s "$FLOWSEAL_HOSTS" ] || flowseal_update
+	cp "$HOSTS_FILE" "$HOSTS_FILE.ztool.bak" 2>/dev/null || true
+	tmp="$(tmp_file hosts-install)"
+	remove_hosts_marker "$HOSTS_FILE" "$tmp" 2>/dev/null || : > "$tmp"
+	{
+		cat "$tmp"
+		echo "# ZTOOL-FLOWSEAL-BEGIN"
+		cat "$FLOWSEAL_HOSTS"
+		echo "# ZTOOL-FLOWSEAL-END"
+	} > "$tmp.next"
+	cp "$tmp.next" "$HOSTS_FILE"
+	rm -f "$tmp" "$tmp.next"
+	restart_dnsmasq
+	echo "Flowseal hosts installed into $HOSTS_FILE"
+}
+
+flowseal_hosts_remove() {
+	[ -f "$HOSTS_FILE" ] || return 0
+	cp "$HOSTS_FILE" "$HOSTS_FILE.ztool.bak" 2>/dev/null || true
+	tmp="$(tmp_file hosts-remove)"
+	remove_hosts_marker "$HOSTS_FILE" "$tmp"
+	cp "$tmp" "$HOSTS_FILE"
+	rm -f "$tmp"
+	restart_dnsmasq
+	echo "Flowseal hosts removed from $HOSTS_FILE"
+}
+
+flowseal_test() {
+	if [ -n "${ZTOOL_TEST_RESULT_FILE:-}" ] && [ -f "$ZTOOL_TEST_RESULT_FILE" ]; then
+		current_label="$(current_nfqws_opt | grep -m 1 '^--comment=ZTOOL_' | sed 's/^--comment=ZTOOL_//' || true)"
+		awk -v name="$current_label" '$1 == name {print "Result: " $2 "/" $3; found=1} END {if (!found) print "Result: 0/0"}' "$ZTOOL_TEST_RESULT_FILE"
+		return 0
+	fi
+	if [ -s "$FLOWSEAL_TARGETS" ]; then
+		awk -F'"' '
+			/^[[:space:]]*#/ || /^[[:space:]]*$/ { next }
+			/= "/ {
+			label=$1
+			gsub(/[[:space:]]|=/, "", label)
+			print label "|" $2
+		}' "$FLOWSEAL_TARGETS" |
+		while IFS='|' read -r label url; do
+			[ -n "$label" ] || continue
+			case "$url" in
+			PING:*) echo "[SKIP] $label ${url#PING:}" ;;
+			*) check_url "$label" "$url" || true ;;
+			esac
+		done
+	else
+		test_current
+	fi
+}
+
+flowseal_score_current() {
+	out="$(flowseal_test)"
+	printf '%s\n' "$out"
+	score_line="$(printf '%s\n' "$out" | sed -n 's/^Result: \([0-9][0-9]*\)\/\([0-9][0-9]*\).*/\1 \2/p' | tail -n 1)"
+	if [ -n "$score_line" ]; then
+		echo "SCORE $score_line"
+	else
+		ok="$(printf '%s\n' "$out" | grep -c '^\[ OK \]' || true)"
+		total="$(printf '%s\n' "$out" | grep -c '^\[\( OK \|FAIL\)\]' || true)"
+		echo "SCORE $ok $total"
+	fi
+}
+
+flowseal_auto() {
+	flowseal_need_lists
+	names="$(flowseal_strategy_names)"
+	runtime_backup="$(tmp_file flowseal-auto-backup)"
+	results="$(tmp_file flowseal-auto-results)"
+	cp "$CONF" "$runtime_backup"
+	backup_config
+	: > "$results"
+	best_name=""
+	best_ok=-1
+	best_total=0
+	best_index=0
+	index=0
+
+	for name in $names; do
+		index=$((index + 1))
+		if [ "$name" = "fs-general-ipset" ] && [ ! -s "$FLOWSEAL_IPSET" ]; then
+			echo "$name 0 0 skipped-missing-ipset" >> "$results"
+			echo "Skipping $name: missing tmp ipset"
+			continue
+		fi
+		echo
+		echo "Testing $name"
+		if ! apply_strategy_raw "$name"; then
+			echo "$name 0 0 apply-failed" >> "$results"
+			continue
+		fi
+		score_output="$(flowseal_score_current)"
+		printf '%s\n' "$score_output" | sed '/^SCORE /d'
+		score="$(printf '%s\n' "$score_output" | sed -n 's/^SCORE //p' | tail -n 1)"
+		ok="$(printf '%s\n' "$score" | awk '{print $1}')"
+		total="$(printf '%s\n' "$score" | awk '{print $2}')"
+		[ -n "$ok" ] || ok=0
+		[ -n "$total" ] || total=0
+		echo "$name $ok $total tested" >> "$results"
+		echo "Score: $name $ok/$total"
+		if [ "$ok" -gt "$best_ok" ] || { [ "$ok" -eq "$best_ok" ] && [ "$total" -gt "$best_total" ]; }; then
+			best_name="$name"
+			best_ok="$ok"
+			best_total="$total"
+			best_index="$index"
+		fi
+	done
+
+	cp "$runtime_backup" "$CONF"
+	restart_zapret
+
+	echo
+	echo "Results:"
+	sort -k2,2nr -k3,3nr "$results" | while read -r r_name r_ok r_total r_status; do
+		printf "  %s %s/%s %s\n" "$r_name" "$r_ok" "$r_total" "$r_status"
+	done
+	[ -n "$best_name" ] || die "no strategy could be tested"
+	echo "Best strategy: $best_name $best_ok/$best_total"
+	printf "Save best strategy? [y/N] "
+	read -r answer
+	case "$answer" in
+	y|Y|yes|YES)
+		apply_strategy_raw "$best_name"
+		echo "Saved best strategy: $best_name $best_ok/$best_total"
+		;;
+	*)
+		cp "$runtime_backup" "$CONF"
+		restart_zapret
+		echo "Restored original config"
+		;;
+	esac
+	rm -f "$runtime_backup" "$results"
+}
+
+flowseal_try() {
+	flowseal_need_lists
+	try_list flowseal
+}
+
+flowseal_status() {
+	echo "Flowseal base: $FLOWSEAL_BASE"
+	[ -f "$FLOWSEAL_META" ] && cat "$FLOWSEAL_META"
+	for f in "$FLOWSEAL_GENERAL" "$FLOWSEAL_GOOGLE" "$FLOWSEAL_EXCLUDE" "$TELEGRAM_HOSTS" "$DISCORD_MEDIA_HOSTS" "$FLOWSEAL_HOSTS" "$FLOWSEAL_DBCLOUD_FAKE" "$FLOWSEAL_IPSET"; do
+		if [ -f "$f" ]; then
+			printf "%s: %s bytes\n" "$f" "$(wc -c < "$f" | tr -d ' ')"
+		else
+			printf "%s: missing\n" "$f"
+		fi
+	done
+	if [ -f "$HOSTS_FILE" ] && grep -F "# ZTOOL-FLOWSEAL-BEGIN" "$HOSTS_FILE" >/dev/null 2>&1; then
+		echo "hosts marker: installed"
+	else
+		echo "hosts marker: absent"
+	fi
+}
+
+flowseal_boot_update() {
+	attempts="${ZTOOL_BOOT_ATTEMPTS:-12}"
+	delay="${ZTOOL_BOOT_SLEEP:-10}"
+	i=1
+	while [ "$i" -le "$attempts" ]; do
+		if ZTOOL_NO_RESTART=1 sh "$0" flowseal update && ZTOOL_NO_RESTART=1 sh "$0" flowseal ipset update; then
+			restart_zapret || true
+			echo "Flowseal boot update completed"
+			return 0
+		fi
+		echo "Flowseal boot update failed, attempt $i/$attempts"
+		i=$((i + 1))
+		[ "$i" -le "$attempts" ] && sleep "$delay"
+	done
+	return 1
+}
+
+flowseal_cmd() {
+	action="${1:-}"
+	shift || true
+	case "$action" in
+	status) flowseal_status ;;
+	update) flowseal_update ;;
+	ipset)
+		[ "${1:-}" = "update" ] || die "usage: zapret-tool flowseal ipset update"
+		flowseal_ipset_update
+		;;
+	migrate-user) flowseal_migrate_user ;;
+	telegram-reset) flowseal_telegram_reset ;;
+	apply)
+		[ $# -eq 1 ] || die "usage: zapret-tool flowseal apply <strategy>"
+		flowseal_apply "$1"
+		;;
+	strategies) flowseal_strategy_names | tr ' ' '\n' ;;
+	try) flowseal_try ;;
+	auto) flowseal_auto ;;
+	test) flowseal_test ;;
+	hosts)
+		case "${1:-}" in
+		install) flowseal_hosts_install ;;
+		remove) flowseal_hosts_remove ;;
+		*) die "usage: zapret-tool flowseal hosts install|remove" ;;
+		esac
+		;;
+	boot-update) flowseal_boot_update ;;
+	*) die "usage: zapret-tool flowseal status|update|ipset update|migrate-user|telegram-reset|apply|strategies|try|auto|test|hosts install|hosts remove|boot-update" ;;
+	esac
+}
+
+update_exclude() {
+	tmp="$(tmp_file exclude)"
+	download_to "$EXCLUDE_URL" "$tmp"
+	size="$(wc -c < "$tmp" | tr -d ' ')"
+	[ "$size" -gt 50 ] || die "downloaded exclude list is too small"
+	[ "$size" -lt 131072 ] || die "downloaded exclude list is too large for this router: $size bytes"
+	cp "$tmp" "$EXCLUDE_FILE"
+	rm -f "$tmp"
+	restart_zapret
+	echo "Exclude list updated: $EXCLUDE_FILE ($size bytes)"
+}
+
+normalize_domain() {
+	d="$1"
+	d="${d#http://}"
+	d="${d#https://}"
+	d="${d%%/*}"
+	d="${d%%:*}"
+	printf '%s' "$d" | tr A-Z a-z | sed 's/^\.*//; s/\.*$//'
+}
+
+validate_domain() {
+	d="$1"
+	printf '%s\n' "$d" | grep -Eq '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z0-9-]+$'
+}
+
+domains_add() {
+	[ $# -ge 1 ] || die "domain is required"
+	mkdir -p "$IPSET_DIR"
+	touch "$USER_HOSTS"
+	for raw in "$@"; do
+		domain="$(normalize_domain "$raw")"
+		validate_domain "$domain" || die "invalid domain: $raw"
+		if ! grep -Fx -- "$domain" "$USER_HOSTS" >/dev/null 2>&1; then
+			printf '%s\n' "$domain" >> "$USER_HOSTS"
+			echo "Added: $domain"
+		else
+			echo "Already present: $domain"
+		fi
+	done
+	restart_zapret
+}
+
+domains_del() {
+	[ $# -ge 1 ] || die "domain is required"
+	touch "$USER_HOSTS"
+	tmp="$(tmp_file domains)"
+	cp "$USER_HOSTS" "$tmp"
+	for raw in "$@"; do
+		domain="$(normalize_domain "$raw")"
+		validate_domain "$domain" || die "invalid domain: $raw"
+		grep -vxF -- "$domain" "$tmp" > "$tmp.next" || true
+		mv "$tmp.next" "$tmp"
+		echo "Removed if present: $domain"
+	done
+	cp "$tmp" "$USER_HOSTS"
+	rm -f "$tmp"
+	restart_zapret
+}
+
+domains_list() {
+	touch "$USER_HOSTS"
+	cat "$USER_HOSTS"
+}
+
+autohost_cmd() {
+	action="${1:-}"
+	case "$action" in
+	on)
+		set_option MODE_FILTER autohostlist
+		restart_zapret
+		echo "AutoHostList enabled"
+		;;
+	off)
+		set_option MODE_FILTER hostlist
+		restart_zapret
+		echo "AutoHostList disabled"
+		;;
+	clear)
+		mkdir -p "$IPSET_DIR"
+		: > "$AUTO_FILE"
+		restart_zapret
+		echo "AutoHostList cleared: $AUTO_FILE"
+		;;
+	*) die "usage: zapret-tool autohost on|off|clear" ;;
+	esac
+}
+
+check_url() {
+	label="$1"
+	url="$2"
+	if curl -sSL --connect-timeout 4 --max-time 8 --speed-time 3 --speed-limit 1 --range 0-65535 -A "Mozilla/5.0 ztool" -o /dev/null "$url" >/dev/null 2>&1; then
+		echo "[ OK ] $label"
+		return 0
+	fi
+	echo "[FAIL] $label"
+	return 1
+}
+
+test_current() {
+	ok=0
+	total=0
+	while IFS='|' read -r label url; do
+		[ -n "$label" ] || continue
+		total=$((total + 1))
+		if check_url "$label" "$url"; then
+			ok=$((ok + 1))
+		fi
+	done <<'EOF'
+youtube|https://www.youtube.com/
+googlevideo|https://redirector.googlevideo.com/
+discord|https://discord.com/
+rutracker|https://rutracker.org/
+meduza|https://meduza.io/
+instagram|https://www.instagram.com/
+EOF
+	echo "Result: $ok/$total"
+	if [ "$ok" -eq 0 ]; then
+		echo "Note: this is a router-local smoke test; forwarded LAN clients may behave differently."
+	fi
+	return 0
+}
+
+test_domain() {
+	domain="$(normalize_domain "$1")"
+	validate_domain "$domain" || die "invalid domain: $1"
+	check_url "$domain" "https://$domain/"
+}
+
+try_list() {
+	mode="$1"
+	domain="${2:-}"
+	runtime_backup="$(tmp_file runtime-backup)"
+	cp "$CONF" "$runtime_backup"
+	backup_config
+
+	case "$mode" in
+	general) names="v1 v2 v3 v4 v5 v6 v7 v8 v9" ;;
+	youtube) names="yv01 yv02 yv03 yv04 yv05 yv06 yv07 yv08 yv09 yv10 yv11" ;;
+	domain) names="v1 v2 v3 v4 v5 v6 v7 v8 v9" ;;
+	flowseal) names="$(flowseal_strategy_names)" ;;
+	*) die "unknown try mode: $mode" ;;
+	esac
+
+	for name in $names; do
+		echo
+		echo "Applying $name"
+		if ! apply_strategy_raw "$name"; then
+			cp "$runtime_backup" "$CONF"
+			restart_zapret || true
+			rm -f "$runtime_backup"
+			die "failed to apply $name"
+		fi
+
+		case "$mode" in
+		domain) test_domain "$domain" || true ;;
+		flowseal) flowseal_test || true ;;
+		*) test_current || true ;;
+		esac
+
+		printf "Save this strategy? [s=save, Enter=next, r=restore, q=quit] "
+		read -r answer
+		case "$answer" in
+		s|S)
+			rm -f "$runtime_backup"
+			echo "Saved: $name"
+			return 0
+			;;
+		r|R|q|Q)
+			cp "$runtime_backup" "$CONF"
+			restart_zapret
+			rm -f "$runtime_backup"
+			echo "Restored original config"
+			return 0
+			;;
+		esac
+	done
+
+	cp "$runtime_backup" "$CONF"
+	restart_zapret
+	rm -f "$runtime_backup"
+	echo "No strategy saved; original config restored"
+}
+
+status() {
+	need_conf
+	echo "Config: $CONF"
+	echo "Backup: $BACKUP $([ -f "$BACKUP" ] && echo present || echo missing)"
+	echo "Overlay:"
+	df -h /overlay 2>/dev/null || true
+	echo
+	echo "Zapret:"
+	echo "  MODE_FILTER: $(get_option MODE_FILTER)"
+	echo "  TCP ports: $(get_option NFQWS_PORTS_TCP)"
+	echo "  UDP ports: $(get_option NFQWS_PORTS_UDP)"
+	echo "  label: $(current_nfqws_opt | grep -m 1 '^--comment=' | sed 's/^--comment=//' || true)"
+	echo "  init: $([ -x "$INIT" ] && echo executable || echo missing-or-not-executable)"
+	if have pgrep; then
+		if pgrep -f nfqws >/dev/null 2>&1; then
+			echo "  nfqws: running"
+		else
+			echo "  nfqws: not running"
+		fi
+	fi
+	echo
+	echo "Lists:"
+	for f in "$USER_HOSTS" "$EXCLUDE_FILE" "$AUTO_FILE" "$GOOGLE_HOSTS" "$FLOWSEAL_GENERAL" "$FLOWSEAL_GOOGLE" "$FLOWSEAL_EXCLUDE" "$TELEGRAM_HOSTS" "$DISCORD_MEDIA_HOSTS" "$FLOWSEAL_IPSET"; do
+		if [ -f "$f" ]; then
+			printf "  %s: %s bytes\n" "$f" "$(wc -c < "$f" | tr -d ' ')"
+		else
+			printf "  %s: missing\n" "$f"
+		fi
+	done
+}
+
+usage() {
+	cat <<'EOF'
+Usage:
+  zapret-tool
+  zapret-tool status
+  zapret-tool backup|restore
+  zapret-tool start|stop|restart
+  zapret-tool apply v1..v9|yv01..yv11
+  zapret-tool try general|youtube|domain <domain>
+  zapret-tool test current|domain <domain>
+  zapret-tool update-exclude
+  zapret-tool autohost on|off|clear
+  zapret-tool domains add|del|list [domain...]
+  zapret-tool flowseal status|update|ipset update|migrate-user|telegram-reset
+  zapret-tool flowseal strategies
+  zapret-tool flowseal apply <strategy>
+  zapret-tool flowseal try|auto|test|hosts install|hosts remove|boot-update
+EOF
+}
+
+menu() {
+	while true; do
+		echo
+		echo "zapret-tool"
+		echo "1) status"
+		echo "2) try general strategies"
+		echo "3) try YouTube strategies"
+		echo "4) apply v6 baseline"
+		echo "5) test current"
+		echo "6) update exclude list"
+		echo "7) AutoHostList on"
+		echo "8) AutoHostList off"
+		echo "9) backup"
+		echo "10) Flowseal update"
+		echo "11) Flowseal try"
+		echo "12) Flowseal auto best"
+		echo "0) exit"
+		printf "Choice: "
+		read -r choice
+		case "$choice" in
+		1) status ;;
+		2) try_list general ;;
+		3) try_list youtube ;;
+		4) apply_strategy v6 ;;
+		5) test_current || true ;;
+		6) update_exclude ;;
+		7) autohost_cmd on ;;
+		8) autohost_cmd off ;;
+		9) backup_config ;;
+		10) flowseal_update; flowseal_ipset_update ;;
+		11) flowseal_try ;;
+		12) flowseal_auto ;;
+		0|"") exit 0 ;;
+		*) echo "Unknown choice" ;;
+		esac
+	done
+}
+
+main() {
+	if [ "$#" -eq 0 ]; then
+		menu
+		return
+	fi
+
+	cmd="$1"
+	shift
+	case "$cmd" in
+	status) status ;;
+	backup) backup_config ;;
+	restore) restore_config ;;
+	start) "$INIT" start ;;
+	stop) "$INIT" stop ;;
+	restart) restart_zapret ;;
+	apply)
+		[ $# -eq 1 ] || die "usage: zapret-tool apply v1..v9|yv01..yv11"
+		apply_strategy "$1"
+		;;
+	try)
+		mode="${1:-}"
+		case "$mode" in
+		general|youtube) try_list "$mode" ;;
+		domain)
+			[ $# -eq 2 ] || die "usage: zapret-tool try domain <domain>"
+			try_list domain "$2"
+			;;
+		*) die "usage: zapret-tool try general|youtube|domain <domain>" ;;
+		esac
+		;;
+	test)
+		mode="${1:-}"
+		case "$mode" in
+		current) test_current ;;
+		domain)
+			[ $# -eq 2 ] || die "usage: zapret-tool test domain <domain>"
+			test_domain "$2"
+			;;
+		*) die "usage: zapret-tool test current|domain <domain>" ;;
+		esac
+		;;
+	update-exclude) update_exclude ;;
+	flowseal) flowseal_cmd "$@" ;;
+	autohost) autohost_cmd "${1:-}" ;;
+	domains)
+		action="${1:-}"
+		shift || true
+		case "$action" in
+		add) domains_add "$@" ;;
+		del) domains_del "$@" ;;
+		list) domains_list ;;
+		*) die "usage: zapret-tool domains add|del|list [domain...]" ;;
+		esac
+		;;
+	-h|--help|help) usage ;;
+	*) usage; exit 1 ;;
+	esac
+}
+
+main "$@"

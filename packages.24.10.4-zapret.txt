@@ -1,0 +1,17 @@
+curl
+ca-bundle
+luci-light
+zapret
+luci-app-zapret
+nftables-json
+-nftables-nojson
+-luci-app-package-manager
+-luci-app-firewall
+-luci-proto-ipv6
+-luci-proto-ppp
+-odhcp6c
+-odhcpd-ipv6only
+-ppp
+-ppp-mod-pppoe
+-uclient-fetch
+-urngd

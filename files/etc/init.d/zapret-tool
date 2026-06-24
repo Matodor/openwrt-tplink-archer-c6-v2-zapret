@@ -1,0 +1,20 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+STOP=10
+
+boot() {
+	start
+}
+
+start() {
+	[ -x /usr/bin/zapret-tool ] || return 0
+	(
+		sleep 15
+		/usr/bin/zapret-tool flowseal boot-update
+	) >>/tmp/zapret-tool-boot.log 2>&1 &
+}
+
+stop() {
+	return 0
+}

@@ -1,0 +1,246 @@
+rm -rf /tmp/openwrt-imagebuilder-2026-06-24-c6v2/openwrt-imagebuilder-25.12.4-ath79-generic.Linux-x86_64/tmp /tmp/openwrt-imagebuilder-2026-06-24-c6v2/openwrt-imagebuilder-25.12.4-ath79-generic.Linux-x86_64/dl /tmp/openwrt-imagebuilder-2026-06-24-c6v2/openwrt-imagebuilder-25.12.4-ath79-generic.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79 /tmp/openwrt-imagebuilder-2026-06-24-c6v2/openwrt-imagebuilder-25.12.4-ath79-generic.Linux-x86_64/bin/targets/ath79/generic
+make: TMPDIR value /tmp/openwrt-imagebuilder-2026-06-24-c6v2/openwrt-imagebuilder-25.12.4-ath79-generic.Linux-x86_64/tmp: No such file or directory
+make: using default temporary directory '/tmp'
+make: TMPDIR value /tmp/openwrt-imagebuilder-2026-06-24-c6v2/openwrt-imagebuilder-25.12.4-ath79-generic.Linux-x86_64/tmp: No such file or directory
+make: using default temporary directory '/tmp'
+make: TMPDIR value /tmp/openwrt-imagebuilder-2026-06-24-c6v2/openwrt-imagebuilder-25.12.4-ath79-generic.Linux-x86_64/tmp: No such file or directory
+make: using default temporary directory '/tmp'
+Building images for ath79 - TP-Link Archer C6 v2 (EU/RU/JP)
+Packages: curl ca-bundle luci luci-ssl rpcd rpcd-mod-rrdns uhttpd uhttpd-mod-ubus zapret luci-app-zapret ath10k-firmware-qca9888-ct base-files ca-bundle dnsmasq dropbear firewall4 fstools ipq-wifi-tplink_archer-c6-v2 kernel kmod-ath10k-ct kmod-ath9k kmod-gpio-button-hotplug kmod-nft-offload libc libgcc libustream-mbedtls logd mtd netifd nftables swconfig uci urandom-seed wpad-basic-mbedtls "base-files=1707~4ccb782af7" "libc=1.2.5-r5" "kernel=6.12.87~bcaa08c25321cf83e5aa78ef3f965153-r1"
+
+OK: 0 B in 0 packages
+
+Installing packages...
+(  1/146) Installing libgcc1 (14.3.0-r5)
+(  2/146) Installing libc (1.2.5-r5)
+(  3/146) Installing ath10k-board-qca9888 (20260221-r1)
+(  4/146) Installing ath10k-firmware-qca9888-ct (2023.04.04-r1)
+(  5/146) Installing busybox (1.37.0-r6)
+(  6/146) Installing libubox20260213 (2026.06.19~7dd12784-r1)
+(  7/146) Installing libubus20251202 (2026.05.23~795b32bb-r2)
+(  8/146) Installing libuci20250120 (2025.12.02~66127cd7-r1)
+(  9/146) Installing libjson-c5 (0.18-r1)
+( 10/146) Installing libblobmsg-json20260213 (2026.06.19~7dd12784-r1)
+( 11/146) Installing ubusd (2026.05.23~795b32bb-r2)
+( 12/146) Installing ubus (2026.05.23~795b32bb-r2)
+( 13/146) Installing ubox (2025.10.30~6f78fa49-r1)
+( 14/146) Installing fstools (2026.02.15~8d377aa6-r1)
+( 15/146) Installing fwtool (2025.10.03~04cd252e-r1)
+( 16/146) Installing jsonfilter (2026.03.16~b9034210-r1)
+( 17/146) Installing jshn (2026.06.19~7dd12784-r1)
+( 18/146) Installing libnl-tiny1 (2025.12.02~40493a65-r1)
+( 19/146) Installing libudebug (2026.01.16~875e1a7a)
+( 20/146) Installing libucode20230711 (2026.01.16~85922056-r1)
+( 21/146) Installing ucode (2026.01.16~85922056-r1)
+( 22/146) Installing ucode-mod-fs (2026.01.16~85922056-r1)
+( 23/146) Installing ucode-mod-ubus (2026.01.16~85922056-r1)
+( 24/146) Installing ucode-mod-uci (2026.01.16~85922056-r1)
+( 25/146) Installing ucode-mod-uloop (2026.01.16~85922056-r1)
+( 26/146) Installing netifd (2026.02.26~cbb83a18-r1)
+( 27/146) Installing openwrt-keyring (2025.12.10~f0670054-r1)
+( 28/146) Installing libjson-script20260213 (2026.06.19~7dd12784-r1)
+( 29/146) Installing procd (2026.03.13~58eb263d-r1)
+( 30/146) Installing procd-seccomp (2026.03.13~58eb263d-r1)
+( 31/146) Installing usign (2025.10.03~c4c72b1b-r1)
+( 32/146) Installing base-files (1707~4ccb782af7)
+( 33/146) Installing ca-bundle (20260223-r1)
+( 34/146) Installing libmbedtls21 (3.6.6-r2)
+( 35/146) Installing libnghttp2-14 (1.66.0-r1)
+( 36/146) Installing zlib (1.3.1-r1)
+( 37/146) Installing libcurl4 (8.19.0-r2)
+( 38/146) Installing curl (8.19.0-r2)
+( 39/146) Installing dnsmasq (2.93-r1)
+( 40/146) Installing dropbear (2025.89-r1)
+( 41/146) Installing kernel (6.12.87~bcaa08c25321cf83e5aa78ef3f965153-r1)
+( 42/146) Installing kmod-crypto-hash (6.12.87-r1)
+( 43/146) Installing kmod-crypto-crc32c (6.12.87-r1)
+( 44/146) Installing kmod-lib-crc32c (6.12.87-r1)
+( 45/146) Installing kmod-nf-conntrack (6.12.87-r1)
+( 46/146) Installing kmod-nf-conntrack6 (6.12.87-r1)
+( 47/146) Installing kmod-nf-log (6.12.87-r1)
+( 48/146) Installing kmod-nf-log6 (6.12.87-r1)
+( 49/146) Installing kmod-nf-nat (6.12.87-r1)
+( 50/146) Installing kmod-nf-reject (6.12.87-r1)
+( 51/146) Installing kmod-nf-reject6 (6.12.87-r1)
+( 52/146) Installing kmod-nfnetlink (6.12.87-r1)
+( 53/146) Installing kmod-nft-core (6.12.87-r1)
+( 54/146) Installing kmod-nft-fib (6.12.87-r1)
+( 55/146) Installing kmod-nft-nat (6.12.87-r1)
+( 56/146) Installing kmod-nf-flow (6.12.87-r1)
+( 57/146) Installing kmod-nft-offload (6.12.87-r1)
+( 58/146) Installing jansson4 (2.14.1-r1)
+( 59/146) Installing libmnl0 (1.0.5-r1)
+( 60/146) Installing libnftnl11 (1.3.1-r1)
+( 61/146) Installing nftables-json (1.1.6-r2)
+( 62/146) Installing firewall4 (2025.03.17~b6e51575-r2)
+( 63/146) Installing ipq-wifi-tplink_archer-c6-v2 (2026.01.28~88514e5a-r1)
+( 64/146) Installing hostapd-common (2025.08.26~ca266cc2-r1)
+( 65/146) Installing iw (6.17-r1)
+( 66/146) Installing ucode-mod-digest (2026.01.16~85922056-r1)
+( 67/146) Installing ucode-mod-nl80211 (2026.01.16~85922056-r1)
+( 68/146) Installing ucode-mod-rtnl (2026.01.16~85922056-r1)
+( 69/146) Installing wifi-scripts (1.0-r1)
+( 70/146) Installing wireless-regdb (2026.03.18-r1)
+( 71/146) Installing kmod-cfg80211 (6.12.87.6.18.26-r1)
+( 72/146) Installing kmod-crypto-null (6.12.87-r1)
+( 73/146) Installing kmod-crypto-aead (6.12.87-r1)
+( 74/146) Installing kmod-crypto-manager (6.12.87-r1)
+( 75/146) Installing kmod-crypto-hmac (6.12.87-r1)
+( 76/146) Installing kmod-crypto-sha3 (6.12.87-r1)
+( 77/146) Installing kmod-crypto-sha512 (6.12.87-r1)
+( 78/146) Installing kmod-crypto-rng (6.12.87-r1)
+( 79/146) Installing kmod-crypto-geniv (6.12.87-r1)
+( 80/146) Installing kmod-crypto-seqiv (6.12.87-r1)
+( 81/146) Installing kmod-crypto-ctr (6.12.87-r1)
+( 82/146) Installing kmod-crypto-ccm (6.12.87-r1)
+( 83/146) Installing kmod-crypto-cmac (6.12.87-r1)
+( 84/146) Installing kmod-crypto-gf128 (6.12.87-r1)
+( 85/146) Installing kmod-crypto-ghash (6.12.87-r1)
+( 86/146) Installing kmod-crypto-gcm (6.12.87-r1)
+( 87/146) Installing kmod-mac80211 (6.12.87.6.18.26-r1)
+( 88/146) Installing kmod-ath (6.12.87.6.18.26-r1)
+( 89/146) Installing kmod-i2c-core (6.12.87-r1)
+( 90/146) Installing kmod-hwmon-core (6.12.87-r1)
+( 91/146) Installing kmod-ath10k-ct (6.12.87.2025.12.01~bb84e159-r1)
+( 92/146) Installing kmod-random-core (6.12.87-r1)
+( 93/146) Installing kmod-ath9k-common (6.12.87.6.18.26-r1)
+( 94/146) Installing kmod-ath9k (6.12.87.6.18.26-r1)
+( 95/146) Installing kmod-gpio-button-hotplug (6.12.87-r5)
+( 96/146) Installing libustream-mbedtls20201210 (2026.03.01~99f1c0db-r1)
+( 97/146) Installing logd (2025.10.30~6f78fa49-r1)
+( 98/146) Installing cgi-io (2025.12.11~658b14bd-r1)
+( 99/146) Installing liblucihttp0 (2023.03.15~9b5b683f-r1)
+(100/146) Installing liblucihttp-ucode (2023.03.15~9b5b683f-r1)
+(101/146) Installing rpcd (2026.06.04~28faf640-r1)
+(102/146) Installing rpcd-mod-file (2026.06.04~28faf640-r1)
+(103/146) Installing rpcd-mod-luci (20240305-r1)
+(104/146) Installing rpcd-mod-ucode (2026.06.04~28faf640-r1)
+(105/146) Installing ucode-mod-html (1)
+(106/146) Installing ucode-mod-log (2026.01.16~85922056-r1)
+(107/146) Installing ucode-mod-math (2026.01.16~85922056-r1)
+(108/146) Installing luci-base (26.167.80096~2df00de)
+(109/146) Installing luci-app-package-manager (26.167.80096~2df00de)
+(110/146) Installing luci-app-firewall (26.167.80096~2df00de)
+(111/146) Installing luci-lib-uqr (26.167.80096~2df00de)
+(112/146) Installing libiwinfo-data (2026.01.14~f5dd57a8-r1)
+(113/146) Installing libiwinfo20230701 (2026.01.14~f5dd57a8-r1)
+(114/146) Installing rpcd-mod-iwinfo (2026.06.04~28faf640-r1)
+(115/146) Installing luci-mod-network (26.167.80096~2df00de)
+(116/146) Installing luci-mod-status (26.167.80096~2df00de)
+(117/146) Installing luci-mod-system (26.167.80096~2df00de)
+(118/146) Installing luci-mod-admin-full (26.167.80096~2df00de)
+(119/146) Installing luci-proto-ipv6 (26.167.80096~2df00de)
+(120/146) Installing luci-proto-ppp (26.167.80096~2df00de)
+(121/146) Installing luci-theme-bootstrap (26.167.80096~2df00de)
+(122/146) Installing rpcd-mod-rrdns (20170710)
+(123/146) Installing uhttpd (2026.06.16~7b1bec45-r1)
+(124/146) Installing uhttpd-mod-ubus (2026.06.16~7b1bec45-r1)
+(125/146) Installing luci-light (26.167.80096~2df00de)
+(126/146) Installing luci (26.167.80096~2df00de)
+(127/146) Installing coreutils (9.9-r2)
+(128/146) Installing coreutils-sleep (9.9-r2)
+(129/146) Installing libpthread (1.2.5-r5)
+(130/146) Installing coreutils-sort (9.9-r2)
+(131/146) Installing gzip (1.14-r1)
+(132/146) Installing kmod-nfnetlink-queue (6.12.87-r1)
+(133/146) Installing kmod-nft-queue (6.12.87-r1)
+(134/146) Installing libcap (2.69-r1)
+(135/146) Installing libnfnetlink0 (1.0.2-r1)
+(136/146) Installing libnetfilter-queue1 (1.0.5-r4)
+(137/146) Installing zapret (72.20260307-r1)
+(138/146) Installing luci-app-zapret (72.20260307-r1)
+(139/146) Installing px5g-mbedtls (11)
+(140/146) Installing luci-ssl (26.167.80096~2df00de)
+(141/146) Installing mtd (27)
+(142/146) Installing swconfig (12)
+(143/146) Installing uci (2025.12.02~66127cd7-r1)
+(144/146) Installing getrandom (2025.10.30~6f78fa49-r1)
+(145/146) Installing urandom-seed (3)
+(146/146) Installing wpad-basic-mbedtls (2025.08.26~ca266cc2-r1)
+OK: 13.8 MiB in 146 packages
+
+Finalizing root filesystem...
+/tmp/openwrt-imagebuilder-2026-06-24-c6v2/openwrt-imagebuilder-25.12.4-ath79-generic.Linux-x86_64/staging_dir/host/bin/tar: Deleting non-header from archive
+/tmp/openwrt-imagebuilder-2026-06-24-c6v2/openwrt-imagebuilder-25.12.4-ath79-generic.Linux-x86_64/staging_dir/host/bin/tar: Deleting non-header from archive
+/tmp/openwrt-imagebuilder-2026-06-24-c6v2/openwrt-imagebuilder-25.12.4-ath79-generic.Linux-x86_64/staging_dir/host/bin/tar: Deleting non-header from archive
+/tmp/openwrt-imagebuilder-2026-06-24-c6v2/openwrt-imagebuilder-25.12.4-ath79-generic.Linux-x86_64/staging_dir/host/bin/tar: Deleting non-header from archive
+/tmp/openwrt-imagebuilder-2026-06-24-c6v2/openwrt-imagebuilder-25.12.4-ath79-generic.Linux-x86_64/staging_dir/host/bin/tar: Deleting non-header from archive
+/tmp/openwrt-imagebuilder-2026-06-24-c6v2/openwrt-imagebuilder-25.12.4-ath79-generic.Linux-x86_64/staging_dir/host/bin/tar: Exiting with failure status due to previous errors
+add alternative: /bin/sleep -> /usr/libexec/sleep-coreutils
+add alternative: /usr/bin/sort -> /usr/libexec/sort-coreutils
+add alternative: /usr/bin/ssh-keygen -> /usr/sbin/dropbear
+add alternative: /usr/bin/scp -> /usr/sbin/dropbear
+add alternative: /usr/bin/ssh -> /usr/sbin/dropbear
+add alternative: /bin/gunzip -> /usr/libexec/gunzip-gnu
+add alternative: /bin/gzip -> /usr/libexec/gzip-gnu
+add alternative: /bin/zcat -> /usr/libexec/zcat-gnu
+add alternative: /sbin/logread -> /usr/libexec/logread-ubox
+add alternative: /sbin/rmmod -> /sbin/kmodloader
+add alternative: /sbin/insmod -> /sbin/kmodloader
+add alternative: /sbin/lsmod -> /sbin/kmodloader
+add alternative: /sbin/modinfo -> /sbin/kmodloader
+add alternative: /sbin/modprobe -> /sbin/kmodloader
+Enabling boot
+Enabling bootcount
+Enabling cron
+Enabling dnsmasq
+Enabling done
+Enabling dropbear
+Enabling firewall
+Enabling gpio_switch
+Enabling led
+Enabling log
+Enabling network
+Enabling packet_steering
+Enabling rpcd
+Enabling sysctl
+Enabling sysfixtime
+Enabling sysntpd
+Enabling system
+Enabling ucitrack
+Enabling uhttpd
+Enabling umount
+Enabling urandom_seed
+Enabling wpad
+Enabling zapret
+
+Building images...
+Pseudo file "dev" exists in source filesystem "/tmp/openwrt-imagebuilder-2026-06-24-c6v2/openwrt-imagebuilder-25.12.4-ath79-generic.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/dev".
+Ignoring, exclude it (-e/-ef) to override.
+Parallel mksquashfs: Using 16 processors
+Creating 4.0 filesystem on /tmp/openwrt-imagebuilder-2026-06-24-c6v2/openwrt-imagebuilder-25.12.4-ath79-generic.Linux-x86_64/build_dir/target-mips_24kc_musl/linux-ath79_generic/root.squashfs, block size 262144.
+[|                                                               ]   0/919   0%[===============================================================-] 967/967 100%
+
+Exportable Squashfs 4.0 filesystem, xz compressed, data block size 262144
+	compressed data, compressed metadata, compressed fragments,
+	no xattrs, compressed ids
+	duplicates are removed
+Filesystem size 4859.02 Kbytes (4.75 Mbytes)
+	34.37% of uncompressed filesystem size (14136.99 Kbytes)
+Inode table size 9212 bytes (9.00 Kbytes)
+	21.87% of uncompressed inode table size (42130 bytes)
+Directory table size 13384 bytes (13.07 Kbytes)
+	49.43% of uncompressed directory table size (27079 bytes)
+Number of duplicate files found 34
+Number of inodes 1270
+Number of files 922
+Number of fragments 34
+Number of symbolic links 210
+Number of device nodes 1
+Number of fifo nodes 0
+Number of socket nodes 0
+Number of directories 137
+Number of hard-links 0
+Number of ids (unique uids + gids) 1
+Number of uids 1
+	unknown (0)
+Number of gids 1
+	unknown (0)
+9718+1 records in
+9718+1 records out
+4975640 bytes (5.0 MB, 4.7 MiB) copied, 0.0256949 s, 194 MB/s
+9718+1 records in
+9718+1 records out
+4975640 bytes (5.0 MB, 4.7 MiB) copied, 0.036464 s, 136 MB/s
+
+Calculating checksums...

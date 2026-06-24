@@ -1,0 +1,547 @@
+Building images for ath79 - TP-Link Archer C6 v2 (EU/RU/JP)
+Packages: curl ca-bundle luci-light zapret luci-app-zapret nftables-json ath10k-firmware-qca9888-ct base-files ca-bundle dnsmasq dropbear firewall4 fstools ipq-wifi-tplink_archer-c6-v2 kernel kmod-ath10k-ct kmod-ath9k kmod-gpio-button-hotplug kmod-nft-offload libc libgcc libustream-mbedtls logd mtd netifd nftables opkg procd-ujail swconfig uboot-envtools uci urandom-seed wpad-basic-mbedtls
+
+Package list missing or not up-to-date, generating it.
+
+Building package index...
+Downloading https://downloads.openwrt.org/releases/24.10.4/targets/ath79/generic/packages/Packages.gz
+Updated list of available packages in /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/../../../../../../tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/openwrt_core
+Downloading https://downloads.openwrt.org/releases/24.10.4/targets/ath79/generic/packages/Packages.sig
+Signature check passed.
+Downloading https://downloads.openwrt.org/releases/24.10.4/packages/mips_24kc/base/Packages.gz
+Updated list of available packages in /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/../../../../../../tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/openwrt_base
+Downloading https://downloads.openwrt.org/releases/24.10.4/packages/mips_24kc/base/Packages.sig
+Signature check passed.
+Downloading https://downloads.openwrt.org/releases/24.10.4/targets/ath79/generic/kmods/6.6.110-1-35ef4dd36891d37023436baa842fa311/Packages.gz
+Updated list of available packages in /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/../../../../../../tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/openwrt_kmods
+Downloading https://downloads.openwrt.org/releases/24.10.4/targets/ath79/generic/kmods/6.6.110-1-35ef4dd36891d37023436baa842fa311/Packages.sig
+Signature check passed.
+Downloading https://downloads.openwrt.org/releases/24.10.4/packages/mips_24kc/luci/Packages.gz
+Updated list of available packages in /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/../../../../../../tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/openwrt_luci
+Downloading https://downloads.openwrt.org/releases/24.10.4/packages/mips_24kc/luci/Packages.sig
+Signature check passed.
+Downloading https://downloads.openwrt.org/releases/24.10.4/packages/mips_24kc/packages/Packages.gz
+Updated list of available packages in /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/../../../../../../tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/openwrt_packages
+Downloading https://downloads.openwrt.org/releases/24.10.4/packages/mips_24kc/packages/Packages.sig
+Signature check passed.
+Downloading https://downloads.openwrt.org/releases/24.10.4/packages/mips_24kc/routing/Packages.gz
+Updated list of available packages in /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/../../../../../../tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/openwrt_routing
+Downloading https://downloads.openwrt.org/releases/24.10.4/packages/mips_24kc/routing/Packages.sig
+Signature check passed.
+Downloading https://downloads.openwrt.org/releases/24.10.4/packages/mips_24kc/telephony/Packages.gz
+Updated list of available packages in /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/../../../../../../tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/openwrt_telephony
+Downloading https://downloads.openwrt.org/releases/24.10.4/packages/mips_24kc/telephony/Packages.sig
+Signature check passed.
+Downloading file:packages/Packages
+Updated list of available packages in /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/../../../../../../tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/imagebuilder
+Downloading file:packages/Packages.sig
+Signature check passed.
+
+Installing packages...
+Installing libc (1.2.5-r4) to root...
+Installing libgcc1 (13.3.0-r4) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libgcc1_13.3.0-r4_mips_24kc.ipk.
+Configuring libgcc1.
+Configuring libc.
+Installing kernel (6.6.110~35ef4dd36891d37023436baa842fa311-r1) to root...
+Configuring kernel.
+Installing curl (8.19.0-r2) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/curl_8.19.0-r2_mips_24kc.ipk.
+Installing libmbedtls21 (3.6.6-r2) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libmbedtls21_3.6.6-r2_mips_24kc.ipk.
+Installing zlib (1.3.1-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/zlib_1.3.1-r1_mips_24kc.ipk.
+Installing libnghttp2-14 (1.63.0-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libnghttp2-14_1.63.0-r1_mips_24kc.ipk.
+Installing ca-bundle (20260223-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ca-bundle_20260223-r1_all.ipk.
+Installing libcurl4 (8.19.0-r2) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libcurl4_8.19.0-r2_mips_24kc.ipk.
+Package ca-bundle (20260223-r1) installed in root is up to date.
+Installing luci-light (26.167.08541~ffc779e) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/luci-light_26.167.08541~ffc779e_all.ipk.
+Installing luci-proto-ipv6 (26.167.08541~ffc779e) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/luci-proto-ipv6_26.167.08541~ffc779e_all.ipk.
+Installing libubox20240329 (2025.07.23~49056d17-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libubox20240329_2025.07.23~49056d17-r1_mips_24kc.ipk.
+Installing libubus20250102 (2025.10.17~60e04048-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libubus20250102_2025.10.17~60e04048-r1_mips_24kc.ipk.
+Installing libuci20250120 (2025.01.20~16ff0bad-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libuci20250120_2025.01.20~16ff0bad-r1_mips_24kc.ipk.
+Installing libjson-c5 (0.18-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libjson-c5_0.18-r1_mips_24kc.ipk.
+Installing libblobmsg-json20240329 (2025.07.23~49056d17-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libblobmsg-json20240329_2025.07.23~49056d17-r1_mips_24kc.ipk.
+Installing rpcd (2025.09.01~bba95191-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/rpcd_2025.09.01~bba95191-r1_mips_24kc.ipk.
+Installing rpcd-mod-file (2025.09.01~bba95191-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/rpcd-mod-file_2025.09.01~bba95191-r1_mips_24kc.ipk.
+Installing libnl-tiny1 (2025.03.19~c0df580a-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libnl-tiny1_2025.03.19~c0df580a-r1_mips_24kc.ipk.
+Installing rpcd-mod-luci (20240305-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/rpcd-mod-luci_20240305-r1_mips_24kc.ipk.
+Installing libucode20230711 (2025.07.18~3f64c808-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libucode20230711_2025.07.18~3f64c808-r1_mips_24kc.ipk.
+Installing rpcd-mod-ucode (2025.09.01~bba95191-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/rpcd-mod-ucode_2025.09.01~bba95191-r1_mips_24kc.ipk.
+Installing cgi-io (2022.08.10~901b0f04-r21) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/cgi-io_2022.08.10~901b0f04-r21_mips_24kc.ipk.
+Installing ucode (2025.07.18~3f64c808-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ucode_2025.07.18~3f64c808-r1_mips_24kc.ipk.
+Installing ucode-mod-fs (2025.07.18~3f64c808-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ucode-mod-fs_2025.07.18~3f64c808-r1_mips_24kc.ipk.
+Installing ucode-mod-uci (2025.07.18~3f64c808-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ucode-mod-uci_2025.07.18~3f64c808-r1_mips_24kc.ipk.
+Installing ucode-mod-ubus (2025.07.18~3f64c808-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ucode-mod-ubus_2025.07.18~3f64c808-r1_mips_24kc.ipk.
+Installing ucode-mod-math (2025.07.18~3f64c808-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ucode-mod-math_2025.07.18~3f64c808-r1_mips_24kc.ipk.
+Installing ucode-mod-html (1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ucode-mod-html_1_mips_24kc.ipk.
+Installing liblucihttp0 (2023.03.15~9b5b683f-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/liblucihttp0_2023.03.15~9b5b683f-r1_mips_24kc.ipk.
+Installing liblucihttp-ucode (2023.03.15~9b5b683f-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/liblucihttp-ucode_2023.03.15~9b5b683f-r1_mips_24kc.ipk.
+Installing luci-base (26.167.08541~ffc779e) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/luci-base_26.167.08541~ffc779e_mips_24kc.ipk.
+Installing kmod-nfnetlink (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-nfnetlink_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-nf-reject (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-nf-reject_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-nf-reject6 (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-nf-reject6_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-nf-conntrack (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-nf-conntrack_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-nf-conntrack6 (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-nf-conntrack6_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-nf-nat (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-nf-nat_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-nf-log (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-nf-log_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-nf-log6 (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-nf-log6_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-hash (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-hash_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-crc32c (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-crc32c_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-lib-crc32c (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-lib-crc32c_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-nft-core (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-nft-core_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-nft-fib (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-nft-fib_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-nf-flow (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-nf-flow_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-nft-nat (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-nft-nat_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-nft-offload (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-nft-offload_6.6.110-r1_mips_24kc.ipk.
+Installing libmnl0 (1.0.5-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libmnl0_1.0.5-r1_mips_24kc.ipk.
+Installing libnftnl11 (1.2.8-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libnftnl11_1.2.8-r1_mips_24kc.ipk.
+Installing jansson4 (2.14-r3) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/jansson4_2.14-r3_mips_24kc.ipk.
+Installing nftables-json (1.1.1-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/nftables-json_1.1.1-r1_mips_24kc.ipk.
+Installing firewall4 (2024.12.18~18fc0ead-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/firewall4_2024.12.18~18fc0ead-r1_mips_24kc.ipk.
+Installing luci-app-firewall (26.167.08541~ffc779e) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/luci-app-firewall_26.167.08541~ffc779e_all.ipk.
+Installing libiwinfo-data (2024.10.20~b94f066e-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libiwinfo-data_2024.10.20~b94f066e-r1_mips_24kc.ipk.
+Installing libiwinfo20230701 (2024.10.20~b94f066e-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libiwinfo20230701_2024.10.20~b94f066e-r1_mips_24kc.ipk.
+Installing rpcd-mod-iwinfo (2025.09.01~bba95191-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/rpcd-mod-iwinfo_2025.09.01~bba95191-r1_mips_24kc.ipk.
+Installing luci-mod-status (26.167.08541~ffc779e) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/luci-mod-status_26.167.08541~ffc779e_mips_24kc.ipk.
+Installing luci-mod-system (26.167.08541~ffc779e) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/luci-mod-system_26.167.08541~ffc779e_all.ipk.
+Installing luci-mod-network (26.167.08541~ffc779e) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/luci-mod-network_26.167.08541~ffc779e_all.ipk.
+Installing luci-mod-admin-full (26.167.08541~ffc779e) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/luci-mod-admin-full_26.167.08541~ffc779e_all.ipk.
+Installing luci-proto-ppp (26.167.08541~ffc779e) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/luci-proto-ppp_26.167.08541~ffc779e_all.ipk.
+Installing luci-theme-bootstrap (26.167.08541~ffc779e) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/luci-theme-bootstrap_26.167.08541~ffc779e_all.ipk.
+Installing rpcd-mod-rrdns (20170710) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/rpcd-mod-rrdns_20170710_mips_24kc.ipk.
+Installing libjson-script20240329 (2025.07.23~49056d17-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libjson-script20240329_2025.07.23~49056d17-r1_mips_24kc.ipk.
+Installing uhttpd (2025.07.06~7e64e8ba-r4) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/uhttpd_2025.07.06~7e64e8ba-r4_mips_24kc.ipk.
+Installing uhttpd-mod-ubus (2025.07.06~7e64e8ba-r4) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/uhttpd-mod-ubus_2025.07.06~7e64e8ba-r4_mips_24kc.ipk.
+Installing zapret (72.20260307-r1) to root...
+Downloading file:packages/zapret_72.20260307-r1_mips_24kc.ipk
+Installing gzip (1.14-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/gzip_1.14-r1_mips_24kc.ipk.
+Installing coreutils (9.7-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/coreutils_9.7-r1_mips_24kc.ipk.
+Installing libpthread (1.2.5-r4) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libpthread_1.2.5-r4_mips_24kc.ipk.
+Installing coreutils-sort (9.7-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/coreutils-sort_9.7-r1_mips_24kc.ipk.
+Installing coreutils-sleep (9.7-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/coreutils-sleep_9.7-r1_mips_24kc.ipk.
+Installing kmod-nfnetlink-queue (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-nfnetlink-queue_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-nft-queue (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-nft-queue_6.6.110-r1_mips_24kc.ipk.
+Installing libnfnetlink0 (1.0.2-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libnfnetlink0_1.0.2-r1_mips_24kc.ipk.
+Installing libnetfilter-queue1 (1.0.5-r4) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libnetfilter-queue1_1.0.5-r4_mips_24kc.ipk.
+Installing libcap (2.69-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libcap_2.69-r1_mips_24kc.ipk.
+Installing luci-app-zapret (72.20260307-r1) to root...
+Downloading file:packages/luci-app-zapret_72.20260307-r1_all.ipk
+Package nftables-json (1.1.1-r1) installed in root is up to date.
+Installing ath10k-firmware-qca9888-ct (2020.11.08-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ath10k-firmware-qca9888-ct_2020.11.08-r1_mips_24kc.ipk.
+Installing ath10k-board-qca9888 (20241110-r2) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ath10k-board-qca9888_20241110-r2_mips_24kc.ipk.
+Installing base-files (1665~29397011cc) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/base-files_1665~29397011cc_mips_24kc.ipk.
+Installing ubusd (2025.10.17~60e04048-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ubusd_2025.10.17~60e04048-r1_mips_24kc.ipk.
+Installing ubus (2025.10.17~60e04048-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ubus_2025.10.17~60e04048-r1_mips_24kc.ipk.
+Installing jshn (2025.07.23~49056d17-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/jshn_2025.07.23~49056d17-r1_mips_24kc.ipk.
+Installing libudebug (2025.08.24~edeb4d6d) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libudebug_2025.08.24~edeb4d6d_mips_24kc.ipk.
+Installing netifd (2025.05.23~7901e66c-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/netifd_2025.05.23~7901e66c-r1_mips_24kc.ipk.
+Installing jsonfilter (2025.04.18~8a86fb78-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/jsonfilter_2025.04.18~8a86fb78-r1_mips_24kc.ipk.
+Installing usign (2020.05.23~f1f65026-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/usign_2020.05.23~f1f65026-r1_mips_24kc.ipk.
+Installing openwrt-keyring (2024.11.01~fbae29d7-r2) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/openwrt-keyring_2024.11.01~fbae29d7-r2_mips_24kc.ipk.
+Installing ubox (2024.04.26~85f10530-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ubox_2024.04.26~85f10530-r1_mips_24kc.ipk.
+Installing fstools (2024.07.14~408c2cc4-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/fstools_2024.07.14~408c2cc4-r1_mips_24kc.ipk.
+Installing fwtool (2019.11.12~8f7fe925-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/fwtool_2019.11.12~8f7fe925-r1_mips_24kc.ipk.
+Installing procd (2026.03.14~c59f2d80-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/procd_2026.03.14~c59f2d80-r1_mips_24kc.ipk.
+Installing procd-seccomp (2026.03.14~c59f2d80-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/procd-seccomp_2026.03.14~c59f2d80-r1_mips_24kc.ipk.
+Installing busybox (1.36.1-r2) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/busybox_1.36.1-r2_mips_24kc.ipk.
+Package ca-bundle (20260223-r1) installed in root is up to date.
+Installing dnsmasq (2.93-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/dnsmasq_2.93-r1_mips_24kc.ipk.
+Installing dropbear (2024.86-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/dropbear_2024.86-r1_mips_24kc.ipk.
+Package firewall4 (2024.12.18~18fc0ead-r1) installed in root is up to date.
+Package fstools (2024.07.14~408c2cc4-r1) installed in root is up to date.
+Installing ipq-wifi-tplink_archer-c6-v2 (2025.10.17~a1529e18-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ipq-wifi-tplink_archer-c6-v2_2025.10.17~a1529e18-r1_mips_24kc.ipk.
+Package kernel (6.6.110~35ef4dd36891d37023436baa842fa311-r1) installed in root is up to date.
+Installing kmod-ath10k-ct (6.6.110.2024.07.30~ac71b14d-r2) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-ath10k-ct_6.6.110.2024.07.30~ac71b14d-r2_mips_24kc.ipk.
+Installing iw (6.9-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/iw_6.9-r1_mips_24kc.ipk.
+Installing iwinfo (2024.10.20~b94f066e-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/iwinfo_2024.10.20~b94f066e-r1_mips_24kc.ipk.
+Installing ucode-mod-nl80211 (2025.07.18~3f64c808-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ucode-mod-nl80211_2025.07.18~3f64c808-r1_mips_24kc.ipk.
+Installing ucode-mod-rtnl (2025.07.18~3f64c808-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ucode-mod-rtnl_2025.07.18~3f64c808-r1_mips_24kc.ipk.
+Installing wifi-scripts (1.0-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/wifi-scripts_1.0-r1_all.ipk.
+Installing wireless-regdb (2026.03.18-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/wireless-regdb_2026.03.18-r1_all.ipk.
+Installing kmod-cfg80211 (6.6.110.6.12.52-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-cfg80211_6.6.110.6.12.52-r1_mips_24kc.ipk.
+Installing kmod-crypto-cmac (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-cmac_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-null (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-null_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-aead (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-aead_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-manager (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-manager_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-hmac (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-hmac_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-sha512 (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-sha512_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-sha3 (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-sha3_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-rng (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-rng_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-geniv (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-geniv_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-seqiv (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-seqiv_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-ctr (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-ctr_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-ccm (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-ccm_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-gf128 (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-gf128_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-ghash (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-ghash_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-crypto-gcm (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-crypto-gcm_6.6.110-r1_mips_24kc.ipk.
+Installing hostapd-common (2024.09.15~5ace39b0-r2) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/hostapd-common_2024.09.15~5ace39b0-r2_mips_24kc.ipk.
+Installing kmod-mac80211 (6.6.110.6.12.52-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-mac80211_6.6.110.6.12.52-r1_mips_24kc.ipk.
+Installing kmod-ath (6.6.110.6.12.52-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-ath_6.6.110.6.12.52-r1_mips_24kc.ipk.
+Installing kmod-hwmon-core (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-hwmon-core_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-ath9k (6.6.110.6.12.52-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-ath9k_6.6.110.6.12.52-r1_mips_24kc.ipk.
+Installing kmod-random-core (6.6.110-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-random-core_6.6.110-r1_mips_24kc.ipk.
+Installing kmod-ath9k-common (6.6.110.6.12.52-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-ath9k-common_6.6.110.6.12.52-r1_mips_24kc.ipk.
+Installing kmod-gpio-button-hotplug (6.6.110-r5) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/kmod-gpio-button-hotplug_6.6.110-r5_mips_24kc.ipk.
+Package kmod-nft-offload (6.6.110-r1) installed in root is up to date.
+Package libc (1.2.5-r4) installed in root is up to date.
+Package libgcc1 (13.3.0-r4) installed in root is up to date.
+Installing libustream-mbedtls20201210 (2024.07.28~99bd3d2b-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libustream-mbedtls20201210_2024.07.28~99bd3d2b-r1_mips_24kc.ipk.
+Installing logd (2024.04.26~85f10530-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/logd_2024.04.26~85f10530-r1_mips_24kc.ipk.
+Installing mtd (26) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/mtd_26_mips_24kc.ipk.
+Package netifd (2025.05.23~7901e66c-r1) installed in root is up to date.
+Package nftables-json (1.1.1-r1) installed in root is up to date.
+Installing opkg (2024.10.16~38eccbb1-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/opkg_2024.10.16~38eccbb1-r1_mips_24kc.ipk.
+Installing libuclient20201210 (2024.10.22~88ae8f20-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/libuclient20201210_2024.10.22~88ae8f20-r1_mips_24kc.ipk.
+Installing uclient-fetch (2024.10.22~88ae8f20-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/uclient-fetch_2024.10.22~88ae8f20-r1_mips_24kc.ipk.
+Installing procd-ujail (2026.03.14~c59f2d80-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/procd-ujail_2026.03.14~c59f2d80-r1_mips_24kc.ipk.
+Installing swconfig (12) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/swconfig_12_mips_24kc.ipk.
+Installing uboot-envtools (2024.07-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/uboot-envtools_2024.07-r1_mips_24kc.ipk.
+Installing uci (2025.01.20~16ff0bad-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/uci_2025.01.20~16ff0bad-r1_mips_24kc.ipk.
+Installing urandom-seed (3) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/urandom-seed_3_mips_24kc.ipk.
+Installing getrandom (2024.04.26~85f10530-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/getrandom_2024.04.26~85f10530-r1_mips_24kc.ipk.
+Installing wpad-basic-mbedtls (2024.09.15~5ace39b0-r2) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/wpad-basic-mbedtls_2024.09.15~5ace39b0-r2_mips_24kc.ipk.
+Installing ucode-mod-uloop (2025.07.18~3f64c808-r1) to root...
+Copying /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/dl/ucode-mod-uloop_2025.07.18~3f64c808-r1_mips_24kc.ipk.
+Configuring libnl-tiny1.
+Configuring libubox20240329.
+Configuring libuci20250120.
+Configuring libubus20250102.
+Configuring libiwinfo-data.
+Configuring libiwinfo20230701.
+Configuring iwinfo.
+Configuring liblucihttp0.
+Configuring cgi-io.
+Configuring kmod-crypto-gf128.
+Configuring libuclient20201210.
+Configuring uclient-fetch.
+Configuring libpthread.
+Configuring opkg.
+Configuring hostapd-common.
+Configuring libjson-c5.
+Configuring libucode20230711.
+Configuring ucode.
+Configuring ucode-mod-fs.
+Configuring ucode-mod-nl80211.
+Configuring ucode-mod-rtnl.
+Configuring libblobmsg-json20240329.
+Configuring ucode-mod-ubus.
+Configuring ucode-mod-uloop.
+Configuring libudebug.
+Configuring libmbedtls21.
+Configuring wpad-basic-mbedtls.
+Configuring ubusd.
+Configuring ubus.
+Configuring iw.
+Configuring kmod-crypto-hash.
+Configuring kmod-crypto-null.
+Configuring kmod-crypto-aead.
+Configuring kmod-crypto-manager.
+Configuring libmnl0.
+Configuring libnfnetlink0.
+Configuring libnetfilter-queue1.
+Configuring rpcd.
+Configuring busybox.
+Configuring kmod-crypto-hmac.
+Configuring kmod-crypto-sha512.
+Configuring kmod-crypto-sha3.
+Configuring kmod-crypto-rng.
+Configuring kmod-crypto-geniv.
+Configuring kmod-crypto-seqiv.
+Configuring kmod-crypto-ctr.
+Configuring kmod-nfnetlink.
+Configuring kmod-nf-reject.
+Configuring kmod-nf-reject6.
+Configuring kmod-nf-conntrack.
+Configuring kmod-nf-conntrack6.
+Configuring kmod-nf-nat.
+Configuring kmod-nf-log.
+Configuring kmod-nf-log6.
+Configuring kmod-crypto-crc32c.
+Configuring kmod-lib-crc32c.
+Configuring kmod-nft-core.
+Configuring kmod-nft-fib.
+Configuring swconfig.
+Configuring rpcd-mod-file.
+Configuring rpcd-mod-luci.
+Configuring rpcd-mod-ucode.
+Configuring ucode-mod-uci.
+Configuring ucode-mod-math.
+Configuring ucode-mod-html.
+Configuring liblucihttp-ucode.
+Configuring luci-base.
+Configuring luci-mod-system.
+Configuring kmod-nf-flow.
+Configuring getrandom.
+Configuring luci-theme-bootstrap.
+Configuring libcap.
+Configuring procd-ujail.
+Configuring jshn.
+Configuring netifd.
+Configuring jsonfilter.
+Configuring usign.
+Configuring openwrt-keyring.
+Configuring ubox.
+Configuring fstools.
+Configuring fwtool.
+Configuring libjson-script20240329.
+Configuring procd.
+Configuring procd-seccomp.
+Configuring base-files.
+Configuring libustream-mbedtls20201210.
+Configuring coreutils.
+Configuring kmod-nft-nat.
+Configuring kmod-nft-offload.
+Configuring libnftnl11.
+Configuring jansson4.
+Configuring nftables-json.
+Configuring firewall4.
+Configuring uboot-envtools.
+Configuring ipq-wifi-tplink_archer-c6-v2.
+Configuring dnsmasq.
+Configuring zlib.
+Configuring libnghttp2-14.
+Configuring ca-bundle.
+Configuring libcurl4.
+Configuring curl.
+Configuring gzip.
+Configuring coreutils-sort.
+Configuring coreutils-sleep.
+Configuring kmod-nfnetlink-queue.
+Configuring kmod-nft-queue.
+Configuring zapret.
+Configuring luci-app-zapret.
+Configuring rpcd-mod-iwinfo.
+Configuring luci-mod-status.
+Configuring luci-app-firewall.
+Configuring kmod-crypto-ghash.
+Configuring wifi-scripts.
+Configuring wireless-regdb.
+Configuring kmod-cfg80211.
+Configuring kmod-crypto-cmac.
+Configuring kmod-crypto-ccm.
+Configuring kmod-crypto-gcm.
+Configuring kmod-mac80211.
+Configuring kmod-ath.
+Configuring kmod-random-core.
+Configuring kmod-ath9k-common.
+Configuring kmod-ath9k.
+Configuring ath10k-board-qca9888.
+Configuring ath10k-firmware-qca9888-ct.
+Configuring uci.
+Configuring dropbear.
+Configuring kmod-hwmon-core.
+Configuring mtd.
+Configuring urandom-seed.
+Configuring luci-proto-ppp.
+Configuring luci-mod-network.
+Configuring luci-mod-admin-full.
+Configuring kmod-gpio-button-hotplug.
+Configuring logd.
+Configuring luci-proto-ipv6.
+Configuring uhttpd.
+Configuring kmod-ath10k-ct.
+Configuring rpcd-mod-rrdns.
+Configuring uhttpd-mod-ubus.
+Configuring luci-light.
+
+Finalizing root filesystem...
+Enabling boot
+Enabling bootcount
+Enabling cron
+Enabling dnsmasq
+Enabling done
+Enabling dropbear
+Enabling firewall
+Enabling gpio_switch
+Enabling led
+Enabling log
+Enabling network
+Enabling packet_steering
+Enabling rpcd
+Enabling sysctl
+Enabling sysfixtime
+Enabling sysntpd
+Enabling system
+Enabling ucitrack
+Enabling uhttpd
+Enabling umount
+Enabling urandom_seed
+Enabling wpad
+Enabling zapret
+
+Building images...
+Pseudo file "dev" exists in source filesystem "/tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/build_dir/target-mips_24kc_musl/root-ath79/dev".
+Ignoring, exclude it (-e/-ef) to override.
+Parallel mksquashfs: Using 16 processors
+Creating 4.0 filesystem on /tmp/openwrt-imagebuilder-24.10.4-c6v2/openwrt-imagebuilder-24.10.4-ath79-generic.Linux-x86_64/build_dir/target-mips_24kc_musl/linux-ath79_generic/root.squashfs, block size 262144.
+[|                                                             ]    0/1166   0%[=============================================================\] 1166/1166 100%
+
+Exportable Squashfs 4.0 filesystem, xz compressed, data block size 262144
+	compressed data, compressed metadata, compressed fragments,
+	no xattrs, compressed ids
+	duplicates are removed
+Filesystem size 4787.13 Kbytes (4.67 Mbytes)
+	27.67% of uncompressed filesystem size (17299.51 Kbytes)
+Inode table size 10394 bytes (10.15 Kbytes)
+	20.86% of uncompressed inode table size (49823 bytes)
+Directory table size 14922 bytes (14.57 Kbytes)
+	44.29% of uncompressed directory table size (33690 bytes)
+Number of duplicate files found 173
+Number of inodes 1508
+Number of files 1164
+Number of fragments 51
+Number of symbolic links 212
+Number of device nodes 1
+Number of fifo nodes 0
+Number of socket nodes 0
+Number of directories 131
+Number of hard-links 0
+Number of ids (unique uids + gids) 1
+Number of uids 1
+	unknown (0)
+Number of gids 1
+	unknown (0)
+9574+1 records in
+9574+1 records out
+4902020 bytes (4.9 MB, 4.7 MiB) copied, 0.0296099 s, 166 MB/s
+9574+1 records in
+9574+1 records out
+4902020 bytes (4.9 MB, 4.7 MiB) copied, 0.0229451 s, 214 MB/s
+
+Calculating checksums...

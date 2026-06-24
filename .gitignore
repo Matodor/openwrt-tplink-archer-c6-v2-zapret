@@ -1,0 +1,33 @@
+# Local editor and OS noise
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+
+# Temporary runtime output
+tmp/
+*.tmp
+*.bak
+*.orig
+*.rej
+
+# Local recovery run directories and packet captures
+archer-c6-v2-recovery-*/
+*.pcap
+tcpdump.log
+dnsmasq.log
+
+# Python/shell helper caches if added later
+__pycache__/
+.pytest_cache/
+
+# Keep firmware and source packages tracked on purpose.
+# Current artifacts are small enough for normal git usage.
+!artifacts/**/*.bin
+!artifacts/**/*.manifest
+!artifacts/**/profiles.json
+!artifacts/**/sha256sums
+!artifacts/**/*.json
+!source-apks/*.apk
+!source-apks/*.zip

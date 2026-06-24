@@ -1,0 +1,22 @@
+#!/bin/sh /etc/rc.common
+
+START=98
+STOP=12
+EXTRA_COMMANDS="status"
+EXTRA_HELP="	status	Check DoH RAM service status"
+
+start() {
+	/usr/bin/doh-ram start
+}
+
+stop() {
+	/usr/bin/doh-ram stop
+}
+
+restart() {
+	/usr/bin/doh-ram restart
+}
+
+status() {
+	/usr/bin/doh-ram status
+}
